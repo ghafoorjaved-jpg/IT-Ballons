@@ -387,31 +387,31 @@
     background: var(--panel);
     border: 2px solid var(--panel-border);
     border-radius: 18px;
-    padding: 26px 24px 22px;
+    padding: 24px 18px 20px;
     color: white;
-    max-width: 340px;
+    max-width: 360px;
     width: 100%;
     box-shadow: 0 20px 50px rgba(0,0,0,0.5);
   }
   .start-box h1 {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
     margin: 0 0 4px;
     color: var(--gold);
   }
   .start-sub {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     color: #9fc0d8;
-    margin: 0 0 18px;
+    margin: 0 0 16px;
   }
   .char-select {
     display: flex;
     justify-content: center;
-    gap: 16px;
-    margin-bottom: 18px;
+    gap: 8px;
+    margin-bottom: 16px;
   }
   .char-option {
-    width: 108px;
-    padding: 10px 8px 8px;
+    width: 90px;
+    padding: 8px 4px 6px;
     border-radius: 12px;
     border: 2px solid rgba(140,190,220,0.25);
     cursor: pointer;
@@ -423,16 +423,16 @@
   }
   .char-preview {
     width: 100%;
-    height: 92px;
+    height: 82px;
     display: flex;
     align-items: flex-end;
     justify-content: center;
   }
-  .char-preview svg { width: 60px; height: 90px; display: block; }
+  .char-preview svg { width: 50px; height: 78px; display: block; }
   .char-option span {
     display: block;
     margin-top: 4px;
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     font-weight: 700;
     color: #dfefff;
   }
@@ -521,11 +521,15 @@
       <div class="char-select">
         <div class="char-option selected" data-gender="girl">
           <div class="char-preview" id="preview-girl"></div>
-          <span>Girl</span>
+          <span>Rija</span>
+        </div>
+        <div class="char-option" data-gender="girl2">
+          <div class="char-preview" id="preview-girl2"></div>
+          <span>Saira</span>
         </div>
         <div class="char-option" data-gender="boy">
           <div class="char-preview" id="preview-boy"></div>
-          <span>Boy</span>
+          <span>Javed</span>
         </div>
       </div>
       <input id="name-input" type="text" maxlength="14" placeholder="Enter your name" value="Rija">
@@ -1326,6 +1330,62 @@ function girlSVG(sfx) {
   </svg>`;
 }
 
+function girlSVG2(sfx) {
+  return `<svg viewBox="0 0 100 150">
+    <defs>
+      <linearGradient id="dressGrad${sfx}" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#0e8f82"/><stop offset="55%" stop-color="#16b6a6"/><stop offset="100%" stop-color="#5fdccb"/>
+      </linearGradient>
+      <linearGradient id="leggingsGrad${sfx}" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#3a3f4d"/><stop offset="55%" stop-color="#565d70"/><stop offset="100%" stop-color="#7d869c"/>
+      </linearGradient>
+      <linearGradient id="hairGrad${sfx}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#2b2b2e"/><stop offset="100%" stop-color="#0d0d0f"/>
+      </linearGradient>
+      <radialGradient id="headGrad${sfx}" cx="35%" cy="30%" r="75%">
+        <stop offset="0%" stop-color="#ffe0c2"/><stop offset="100%" stop-color="#f0c194"/>
+      </radialGradient>
+    </defs>
+    <ellipse cx="50" cy="146" rx="24" ry="5" fill="rgba(0,0,0,0.22)"/>
+    <rect x="34" y="104" width="13" height="34" rx="5" fill="url(#leggingsGrad${sfx})"/>
+    <rect x="53" y="104" width="13" height="34" rx="5" fill="url(#leggingsGrad${sfx})"/>
+    <path d="M32 134 h17 q3 0 3 4 v2 h-22 q0 -4 2 -6 Z" fill="#16b6a6"/>
+    <path d="M51 134 h17 q3 0 3 4 v2 h-22 q0 -4 2 -6 Z" fill="#16b6a6"/>
+    <rect x="32" y="136" width="20" height="2.5" fill="#fff" opacity="0.85"/>
+    <rect x="51" y="136" width="20" height="2.5" fill="#fff" opacity="0.85"/>
+    <path d="M34 64 Q50 55 66 64 L72 106 Q50 114 28 106 Z" fill="url(#dressGrad${sfx})"/>
+    <path d="M34 64 Q50 55 66 64 L67 72 Q50 65 33 72 Z" fill="rgba(255,255,255,0.18)"/>
+    <circle cx="50" cy="82" r="2.6" fill="#fff" opacity="0.9"/>
+    <circle cx="42" cy="90" r="2.2" fill="#fff" opacity="0.7"/>
+    <circle cx="58" cy="94" r="2.2" fill="#fff" opacity="0.7"/>
+    <rect x="21" y="66" width="10" height="30" rx="5" fill="url(#dressGrad${sfx})"/>
+    <circle cx="26" cy="98" r="5.5" fill="#ffe0c2"/>
+    <g class="launcher-arm">
+      <rect x="66" y="34" width="9" height="54" rx="4" fill="#6b7580" transform="rotate(18 70 62)"/>
+      <rect x="63" y="28" width="15" height="9" rx="2" fill="#8a949e" transform="rotate(18 70 62)"/>
+      <rect x="67" y="58" width="9" height="36" rx="4.5" fill="url(#dressGrad${sfx})"/>
+      <circle cx="72" cy="96" r="5.5" fill="#ffe0c2"/>
+    </g>
+    <rect x="45" y="46" width="10" height="10" fill="#f0c194"/>
+    <circle cx="50" cy="35" r="19" fill="url(#headGrad${sfx})"/>
+    <ellipse cx="30" cy="36" rx="2.6" ry="3.6" fill="#f0c194"/>
+    <ellipse cx="70" cy="36" rx="2.6" ry="3.6" fill="#f0c194"/>
+    <ellipse cx="24" cy="44" rx="8" ry="12" fill="url(#hairGrad${sfx})"/>
+    <ellipse cx="76" cy="44" rx="8" ry="12" fill="url(#hairGrad${sfx})"/>
+    <rect x="19" y="34" width="10" height="5" rx="2.5" fill="#16b6a6"/>
+    <rect x="71" y="34" width="10" height="5" rx="2.5" fill="#16b6a6"/>
+    <path d="M30 26 Q50 8 70 26 Q70 18 50 15 Q30 18 30 26 Z" fill="url(#hairGrad${sfx})"/>
+    <path d="M32 28 Q50 20 68 28 Q66 24 50 22 Q34 24 32 28 Z" fill="#1a1a1c"/>
+    <circle cx="43" cy="36" r="2.1" fill="#2a1a12"/>
+    <circle cx="57" cy="36" r="2.1" fill="#2a1a12"/>
+    <circle cx="43.6" cy="35.2" r="0.6" fill="#fff"/>
+    <circle cx="57.6" cy="35.2" r="0.6" fill="#fff"/>
+    <ellipse cx="38" cy="42" rx="3" ry="1.8" fill="#ff9fb0" opacity="0.6"/>
+    <ellipse cx="62" cy="42" rx="3" ry="1.8" fill="#ff9fb0" opacity="0.6"/>
+    <path d="M45 44 Q50 47 55 44" stroke="#a5583c" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+  </svg>`;
+}
+
 function boySVG(sfx) {
   return `<svg viewBox="0 0 100 150">
     <defs>
@@ -1445,11 +1505,12 @@ const playerSvgSlot = document.getElementById('player-svg-slot');
 const playerNameEl = document.getElementById('player-name');
 const muteBtn = document.getElementById('mute-btn');
 
-const DEFAULT_NAMES = { girl: 'Rija', boy: 'Max' };
+const DEFAULT_NAMES = { girl: 'Rija', girl2: 'Saira', boy: 'Javed' };
 let selectedGender = 'girl';
 let nameEdited = false;
 
 document.getElementById('preview-girl').innerHTML = girlSVG('-pg');
+document.getElementById('preview-girl2').innerHTML = girlSVG2('-pg2');
 document.getElementById('preview-boy').innerHTML = boySVG('-pb');
 
 nameInput.addEventListener('input', () => { nameEdited = true; });
@@ -1467,7 +1528,7 @@ startBtn.addEventListener('click', () => {
   const typed = nameInput.value.trim();
   const finalName = typed || DEFAULT_NAMES[selectedGender];
   playerNameEl.textContent = finalName;
-  playerSvgSlot.innerHTML = selectedGender === 'girl' ? girlSVG('-pl') : boySVG('-pl');
+  playerSvgSlot.innerHTML = selectedGender === 'boy' ? boySVG('-pl') : selectedGender === 'girl2' ? girlSVG2('-pl') : girlSVG('-pl');
   startScreen.classList.add('hidden');
   ensureAudio();
   startMusic();
