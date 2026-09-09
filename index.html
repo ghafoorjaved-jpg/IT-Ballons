@@ -266,12 +266,14 @@
   #player-wrap {
     position: absolute;
     bottom: 15%;
-    width: 68px;
-    height: 100px;
+    width: 84px;
+    height: 118px;
     transform: translateX(-50%);
     z-index: 10;
     transition: left 0.05s linear;
     filter: drop-shadow(0 6px 4px rgba(0,0,0,0.25));
+    touch-action: none;
+    cursor: grab;
   }
   #player-wrap svg { width: 100%; height: 100%; display: block; }
   #player-wrap.firing .launcher-arm { transform-origin: 50% 100%; animation: recoil 0.18s ease; }
@@ -365,55 +367,9 @@
   @keyframes trail-fade {
     to { opacity: 0; transform: translateY(10px) scale(0.4); }
   }
-  /* controls */
-  #controls {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 15%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-    z-index: 30;
-  }
-  #joystick {
-    position: relative;
-    width: 96px; height: 96px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #2f4a63, #101f30);
-    border: 2px solid rgba(140,190,220,0.4);
-    touch-action: none;
-  }
-  #joystick-knob {
-    position: absolute;
-    top: 50%; left: 50%;
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #dfeefb, #7fa7c4);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.35), inset 0 -3px 4px rgba(0,0,0,0.2);
-    transform: translate(-50%, -50%);
-    touch-action: none;
-  }
-  #joystick-knob.dragging { transition: none; }
-  #joystick-knob.released { transition: transform 0.18s ease; }
-  #fire-btn {
-    width: 84px; height: 84px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #ff6b5e, #b31f14);
-    border: 3px solid #7a1006;
-    color: white;
-    font-weight: 800;
-    font-size: 0.85rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 6px 0 #7a1006, 0 8px 16px rgba(0,0,0,0.4);
-    cursor: pointer;
-  }
-  #fire-btn:active {
-    box-shadow: 0 2px 0 #7a1006;
-    transform: translateY(4px);
-  }
+  /* player is now the control: drag to move, tap to fire */
+  #player-wrap.dragging { filter: drop-shadow(0 10px 6px rgba(0,0,0,0.35)); }
+  #player-wrap.dragging svg { transform: scale(1.05); }
   /* overlays */
   #start-screen {
     position: absolute;
@@ -757,14 +713,6 @@
     <div id="player-svg-slot"></div>
   </div>
 
-  <div id="controls">
-    <div id="joystick">
-      <div id="joystick-knob"></div>
-
-    </div>
-    <div id="fire-btn">FIRE</div>
-  </div>
-
   <div id="overlay">
     <div class="box">
       <h2 id="overlay-title">Game Over</h2>
@@ -1047,61 +995,48 @@ function nextRound() {
   });
 }
 
-const joystick = document.getElementById('joystick');
-const knob = document.getElementById('joystick-knob');
-let moveRatio = 0; // -1..1
-let dragging = false;
-let joyLoopRunning = false;
+// Player is the control: drag left/right to move, tap (no drag) to fire.
+let isDraggingPlayer = false;
+let dragMoved = false;
+let dragStartClientX = 0;
+let dragStartPlayerX = 0;
+const TAP_MOVE_THRESHOLD = 8; // px of finger movement before it counts as a drag, not a tap
 
-function joystickLoop() {
-  if (moveRatio !== 0) {
-    playerX += moveRatio * 1.8;
-    playerX = Math.max(6, Math.min(94, playerX));
-    playerWrap.style.left = playerX + '%';
-  }
-  if (dragging || moveRatio !== 0) {
-    requestAnimationFrame(joystickLoop);
-  } else {
-    joyLoopRunning = false;
-  }
-}
-function ensureJoyLoop() {
-  if (!joyLoopRunning) { joyLoopRunning = true; requestAnimationFrame(joystickLoop); }
-}
-
-function handleJoyMove(clientX) {
-  const rect = joystick.getBoundingClientRect();
-  const cx = rect.left + rect.width / 2;
-  const maxR = rect.width / 2 - 10;
-  let dx = clientX - cx;
-  dx = Math.max(-maxR, Math.min(maxR, dx));
-  knob.style.transform = `translate(calc(-50% + ${dx}px), -50%)`;
-  moveRatio = dx / maxR;
-}
-
-joystick.addEventListener('pointerdown', (e) => {
-  dragging = true;
-  knob.classList.add('dragging');
-  knob.classList.remove('released');
-  handleJoyMove(e.clientX);
-  ensureJoyLoop();
-  joystick.setPointerCapture(e.pointerId);
+playerWrap.addEventListener('pointerdown', (e) => {
+  isDraggingPlayer = true;
+  dragMoved = false;
+  dragStartClientX = e.clientX;
+  dragStartPlayerX = playerX;
+  playerWrap.classList.add('dragging');
+  playerWrap.style.cursor = 'grabbing';
+  try { playerWrap.setPointerCapture(e.pointerId); } catch (err) {}
 });
-joystick.addEventListener('pointermove', (e) => {
-  if (dragging) handleJoyMove(e.clientX);
-});
-function releaseJoy() {
-  dragging = false;
-  knob.classList.remove('dragging');
-  knob.classList.add('released');
-  knob.style.transform = 'translate(-50%, -50%)';
-  moveRatio = 0;
-}
-joystick.addEventListener('pointerup', releaseJoy);
-joystick.addEventListener('pointercancel', releaseJoy);
-joystick.addEventListener('pointerleave', () => { if (dragging) releaseJoy(); });
 
-document.getElementById('fire-btn').addEventListener('click', fire);
+playerWrap.addEventListener('pointermove', (e) => {
+  if (!isDraggingPlayer) return;
+  const dx = e.clientX - dragStartClientX;
+  if (Math.abs(dx) > TAP_MOVE_THRESHOLD) dragMoved = true;
+  const stageRect = stage.getBoundingClientRect();
+  const deltaPercent = (dx / stageRect.width) * 100;
+  playerX = Math.max(6, Math.min(94, dragStartPlayerX + deltaPercent));
+  playerWrap.style.left = playerX + '%';
+});
+
+function endPlayerDrag(e) {
+  if (!isDraggingPlayer) return;
+  isDraggingPlayer = false;
+  playerWrap.classList.remove('dragging');
+  playerWrap.style.cursor = 'grab';
+  if (!dragMoved) {
+    fire();
+  }
+}
+playerWrap.addEventListener('pointerup', endPlayerDrag);
+playerWrap.addEventListener('pointercancel', endPlayerDrag);
+playerWrap.addEventListener('pointerleave', (e) => {
+  // only end the drag on leave if the pointer isn't captured (rare fallback)
+  if (isDraggingPlayer && e.buttons === 0) endPlayerDrag(e);
+});
 
 function fire() {
   if (hearts <= 0) return;
