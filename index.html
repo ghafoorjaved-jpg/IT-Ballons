@@ -1,0 +1,1761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Play & Learn Deutsch — German IT Vocabulary Shooter</title>
+<style>
+  :root {
+    --sky-top: #2f8fd0;
+    --sky-mid: #7ec4ec;
+    --sky-bottom: #eaf6ff;
+    --stone: #f0e2bd;
+    --stone-dark: #cdb381;
+    --stone-shadow: #96805a;
+    --panel: rgba(8,20,35,0.85);
+    --panel-border: #2fa9e0;
+    --ink: #0c2233;
+    --gold: #f4c430;
+    --heart: #ef4444;
+    --streak: #ff7b1c;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    overflow: hidden;
+    -webkit-user-select: none; user-select: none;
+  }
+  #stage {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    background: linear-gradient(var(--sky-top), var(--sky-mid) 55%, var(--sky-bottom) 82%);
+    overflow: hidden;
+  }
+  /* clouds */
+  .cloud {
+    position: absolute;
+    background: rgba(255,255,255,0.85);
+    border-radius: 50px;
+    filter: blur(0.5px);
+  }
+  /* monument (SVG) */
+  #monument-wrap {
+    position: absolute;
+    left: 50%;
+    bottom: 15%;
+    transform: translateX(-50%);
+    width: min(80%, 420px);
+    height: 42%;
+  }
+  #monument-wrap svg { width: 100%; height: 100%; display: block; overflow: visible; }
+  .tree {
+    position: absolute;
+    bottom: 15%;
+    width: 46px;
+    height: 70px;
+  }
+  .skyline {
+    position: absolute;
+    left: 0; right: 0; bottom: 15%;
+    height: 12%;
+    opacity: 0.35;
+  }
+  /* ground */
+  #ground {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 15%;
+    background: linear-gradient(#1a2b3d, #0d1826);
+  }
+  #ground::before {
+    content: '';
+    position: absolute;
+    top: 10%; left: 0; right: 0; height: 4px;
+    background: repeating-linear-gradient(90deg, #f4c430 0 24px, transparent 24px 44px);
+    opacity: 0.6;
+  }
+  /* HUD */
+  #hud-top {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 10px 0;
+  }
+  #locale {
+    background: var(--panel);
+    border: 2px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 6px 10px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.72rem;
+    flex-shrink: 0;
+  }
+  #flag {
+    width: 26px; height: 18px;
+    background: linear-gradient(#111 0 33%, #dd0000 33% 66%, #ffcc00 66%);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  #locale b { font-size: 0.85rem; display: block; }
+  #prompt-box {
+    flex: 1;
+    background: var(--panel);
+    border: 2px solid var(--panel-border);
+    border-radius: 10px;
+    padding: 6px 10px;
+    text-align: center;
+    color: #dfefff;
+    min-width: 0;
+  }
+  #prompt-box .label { font-size: 0.7rem; opacity: 0.85; }
+  #prompt-box .word {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--gold);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #stats {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .pill {
+    background: var(--panel);
+    border: 2px solid var(--panel-border);
+    border-radius: 20px;
+    padding: 3px 9px;
+    color: white;
+    font-weight: 700;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  #stage-counter {
+    position: absolute;
+    top: 66px; right: 10px;
+    z-index: 30;
+    background: var(--panel);
+    border: 2px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 3px 10px;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+  /* balloons */
+  .balloon {
+    position: absolute;
+    width: 82px;
+    height: 100px;
+    border-radius: 50% 50% 48% 48% / 58% 58% 42% 42%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: bob ease-in-out infinite;
+    box-shadow:
+      inset -12px -14px 22px rgba(0,0,0,0.22),
+      inset 8px 12px 18px rgba(255,255,255,0.22),
+      0 8px 16px rgba(0,0,0,0.2);
+    z-index: 5;
+  }
+  .balloon .shine {
+    position: absolute;
+    top: 16%; left: 22%;
+    width: 26%; height: 32%;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(255,255,255,0.6), rgba(255,255,255,0));
+  }
+  .balloon .label {
+    background: rgba(255,255,255,0.95);
+    color: var(--ink);
+    font-weight: 800;
+    font-size: 0.78rem;
+    padding: 5px 10px;
+    border-radius: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    max-width: 88%;
+    text-align: center;
+    line-height: 1.15;
+    pointer-events: none;
+  }
+  .balloon::after {
+    content: '';
+    position: absolute;
+    left: 50%; bottom: -18px;
+    width: 2px; height: 20px;
+    background: rgba(255,255,255,0.5);
+    transform: translateX(-50%);
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .balloon.popping {
+    animation: none;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+    transform: scale(1.5);
+    opacity: 0;
+  }
+  /* dragon boss */
+  #dragon-wrap {
+    position: absolute;
+    width: 130px;
+    height: 100px;
+    z-index: 9;
+    display: none;
+    filter: drop-shadow(0 0 10px rgba(120,255,140,0.6)) drop-shadow(0 6px 8px rgba(0,0,0,0.3));
+  }
+  #dragon-wrap.show { display: block; }
+  #dragon-wrap svg { width: 100%; height: 100%; display: block; }
+  #dragon-wrap .wing-left, #dragon-wrap .wing-right {
+    transform-origin: 50% 20%;
+    animation: flap 0.45s ease-in-out infinite;
+  }
+  #dragon-wrap .wing-right { animation-delay: 0.05s; }
+  @keyframes flap {
+    0%, 100% { transform: rotate(0deg) scaleY(1); }
+    50% { transform: rotate(-18deg) scaleY(0.85); }
+  }
+  #dragon-hp {
+    position: absolute;
+    top: -16px; left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 3px;
+  }
+  #dragon-hp span {
+    font-size: 0.85rem;
+    color: var(--heart);
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.4));
+  }
+  #dragon-hp span.lost { color: rgba(255,255,255,0.3); }
+  #dragon-wrap.hurt svg { animation: dragon-hurt 0.2s ease; }
+  @keyframes dragon-hurt {
+    0%, 100% { filter: none; }
+    50% { filter: brightness(2.4) saturate(0); }
+  }
+  #dragon-wrap.dying {
+    animation: dragon-die 0.5s ease forwards;
+  }
+  @keyframes dragon-die {
+    to { transform: scale(1.6) rotate(20deg); opacity: 0; }
+  }
+  .spark {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 6;
+    animation: spark-burst 0.5s ease-out forwards;
+  }
+  @keyframes spark-burst {
+    to { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+  }
+  /* player (SVG figure) */
+  #player-wrap {
+    position: absolute;
+    bottom: 15%;
+    width: 84px;
+    height: 118px;
+    transform: translateX(-50%);
+    z-index: 10;
+    transition: left 0.05s linear;
+    filter: drop-shadow(0 6px 4px rgba(0,0,0,0.25));
+    touch-action: none;
+    cursor: grab;
+  }
+  #player-wrap svg { width: 100%; height: 100%; display: block; }
+  #player-wrap.firing .launcher-arm { transform-origin: 50% 100%; animation: recoil 0.18s ease; }
+  #player-name {
+    position: absolute;
+    top: -20px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,0.92);
+    color: #a5225a;
+    font-size: 0.62rem;
+    font-weight: 800;
+    padding: 2px 9px;
+    border-radius: 10px;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    letter-spacing: 0.02em;
+  }
+  @keyframes recoil {
+    0% { transform: translateY(0); }
+    30% { transform: translateY(3px) rotate(-2deg); }
+    100% { transform: translateY(0); }
+  }
+  /* projectile */
+  .rocket {
+    position: absolute;
+    width: 16px;
+    height: 34px;
+    z-index: 8;
+    pointer-events: none;
+  }
+  .rocket .r-flame {
+    position: absolute;
+    left: 50%; bottom: -20px;
+    width: 10px; height: 26px;
+    background: linear-gradient(#fff8dc, #ffb23c 40%, #ff5a1f 75%, transparent);
+    border-radius: 50% 50% 40% 40%;
+    transform: translateX(-50%);
+    animation: flame-flicker 0.08s infinite alternate;
+    filter: blur(0.3px);
+  }
+  @keyframes flame-flicker {
+    from { transform: translateX(-50%) scaleY(1) scaleX(1); opacity: 1; }
+    to   { transform: translateX(-50%) scaleY(0.85) scaleX(0.8); opacity: 0.85; }
+  }
+  .rocket .r-body {
+    position: absolute;
+    left: 50%; top: 30%;
+    width: 9px; height: 60%;
+    background: linear-gradient(90deg, #b7c3cc, #ffffff 35%, #e3e9ed 60%, #9aa7b0);
+    border-radius: 2px;
+    transform: translateX(-50%);
+    box-shadow: 0 0 10px 2px rgba(255,200,80,0.55);
+  }
+  .rocket .r-band {
+    position: absolute;
+    left: 50%; top: 55%;
+    width: 9px; height: 12%;
+    background: #e0453c;
+    transform: translateX(-50%);
+  }
+  .rocket .r-nose {
+    position: absolute;
+    left: 50%; top: 0;
+    width: 12px; height: 34%;
+    background: linear-gradient(#ff8a63, #e0453c);
+    clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+    transform: translateX(-50%);
+  }
+  .rocket .r-fin {
+    position: absolute;
+    top: 62%;
+    width: 8px; height: 16px;
+    background: #d6dde2;
+  }
+  .rocket .r-fin.left {
+    left: 1px;
+    clip-path: polygon(100% 0%, 100% 100%, 0% 100%);
+  }
+  .rocket .r-fin.right {
+    right: 1px;
+    clip-path: polygon(0% 0%, 100% 100%, 0% 100%);
+  }
+  .trail-spark {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 7;
+    background: radial-gradient(circle, #ffe6a1, #ff8a1c 70%, transparent);
+    animation: trail-fade 0.4s ease-out forwards;
+  }
+  @keyframes trail-fade {
+    to { opacity: 0; transform: translateY(10px) scale(0.4); }
+  }
+  /* player is now the control: drag to move, tap to fire */
+  #player-wrap.dragging { filter: drop-shadow(0 10px 6px rgba(0,0,0,0.35)); }
+  #player-wrap.dragging svg { transform: scale(1.05); }
+  /* overlays */
+  #start-screen {
+    position: absolute;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(1.5px 1.5px at 15% 12%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 32% 20%, #fff, transparent),
+      radial-gradient(1px 1px at 48% 8%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 68% 15%, #fff, transparent),
+      radial-gradient(1px 1px at 82% 22%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 90% 10%, #fff, transparent),
+      radial-gradient(1px 1px at 24% 30%, #fff, transparent),
+      radial-gradient(1px 1px at 58% 28%, #fff, transparent),
+      linear-gradient(180deg, #16213e 0%, #2b4a72 22%, #5a86a8 42%, #e8a860 68%, #f4d590 88%, #fce6b0 100%);
+    padding: 20px;
+    text-align: center;
+    overflow: hidden;
+  }
+  #start-screen::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 14%;
+    background: linear-gradient(#7a4a2e, #5c3620);
+    clip-path: polygon(0% 100%, 0% 60%, 6% 45%, 9% 60%, 9% 30%, 11% 30%, 11% 60%, 15% 45%, 18% 65%, 26% 55%, 30% 70%, 38% 50%, 42% 68%, 50% 45%, 50% 20%, 52% 20%, 52% 45%, 58% 62%, 66% 48%, 72% 68%, 80% 52%, 88% 66%, 94% 50%, 100% 62%, 100% 100%);
+    opacity: 0.85;
+  }
+  #start-screen.hidden { display: none; }
+  .decor-balloon {
+    position: absolute;
+    border-radius: 50% 50% 48% 48% / 58% 58% 42% 42%;
+    box-shadow:
+      inset -6px -8px 12px rgba(0,0,0,0.2),
+      inset 5px 7px 10px rgba(255,255,255,0.2);
+    opacity: 0.9;
+    animation: decor-bob ease-in-out infinite;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .decor-balloon::after {
+    content: '';
+    position: absolute;
+    left: 50%; bottom: -12px;
+    width: 2px; height: 14px;
+    background: rgba(255,255,255,0.4);
+    transform: translateX(-50%);
+  }
+  @keyframes decor-bob {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-16px) rotate(3deg); }
+  }
+  #leaderboard-screen {
+    position: absolute;
+    inset: 0;
+    z-index: 65;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, #163a5c, #0a1a2c);
+    padding: 20px;
+    text-align: center;
+  }
+  #leaderboard-screen.hidden { display: none; }
+  .secondary-btn {
+    width: 100%;
+    margin-top: 8px;
+    background: transparent;
+    color: #dfefff;
+    border: 2px solid rgba(140,190,220,0.35);
+    border-radius: 10px;
+    padding: 10px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  #leaderboard-close-btn {
+    width: 100%;
+    margin-top: 6px;
+    background: var(--gold);
+    color: #1a1200;
+    border: none;
+    border-radius: 10px;
+    padding: 11px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  #leaderboard-list, #overlay-leaderboard {
+    max-height: 220px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    text-align: left;
+  }
+  .lb-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    color: #dfefff;
+  }
+  .lb-row:nth-child(odd) { background: rgba(255,255,255,0.04); }
+  .lb-row.me { background: rgba(244,196,48,0.18); border: 1px solid var(--gold); }
+  .lb-rank { width: 22px; font-weight: 800; color: var(--gold); flex-shrink: 0; }
+  .lb-name { flex: 1; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lb-stars { color: var(--gold); font-weight: 700; flex-shrink: 0; }
+  .lb-stage { color: #9fc0d8; font-size: 0.72rem; flex-shrink: 0; }
+  .lb-empty { color: #9fc0d8; font-size: 0.8rem; padding: 14px 0; }
+  #overlay-rank { color: var(--gold); font-weight: 700; font-size: 0.85rem; margin: -6px 0 12px; }
+  #live-leaderboard {
+    position: absolute;
+    top: 66px; left: 10px;
+    z-index: 30;
+    background: var(--panel);
+    border: 2px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 5px 8px 6px;
+    max-width: 148px;
+  }
+  #live-leaderboard .lb-title {
+    font-size: 0.62rem;
+    font-weight: 800;
+    color: var(--gold);
+    margin-bottom: 2px;
+  }
+  .lb-row-mini {
+    font-size: 0.6rem;
+    color: #dfefff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.35;
+  }
+  .lb-row-mini.me { color: var(--gold); font-weight: 700; }
+  .start-box {
+    position: relative;
+    z-index: 1;
+    background: var(--panel);
+    border: 2px solid var(--panel-border);
+    border-radius: 18px;
+    padding: 20px 16px 18px;
+    color: white;
+    max-width: 380px;
+    width: 100%;
+    max-height: 92vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  }
+  .start-box h1 {
+    font-size: 1.55rem;
+    line-height: 1.15;
+    font-weight: 900;
+    margin: 0 0 6px;
+    letter-spacing: 0.01em;
+    font-style: italic;
+    transform: rotate(-2deg);
+  }
+  .start-box h1 span {
+    -webkit-text-stroke: 2px #1a1a1a;
+    text-shadow: 0 3px 0 #1a1a1a, 0 5px 8px rgba(0,0,0,0.5);
+  }
+  .title-red    { color: #ff3b30; }
+  .title-orange { color: #ff9500; }
+  .title-blue   { color: #2f9cff; }
+  .title-yellow { color: #ffd60a; }
+  .start-sub {
+    font-size: 0.76rem;
+    color: #9fc0d8;
+    margin: 0 0 16px;
+  }
+  .char-select {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .char-option {
+    width: 100%;
+    padding: 4px 2px 4px;
+    border-radius: 9px;
+    border: 2px solid rgba(140,190,220,0.25);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .char-option.selected {
+    border-color: var(--gold);
+    background: rgba(244,196,48,0.1);
+  }
+  .char-preview {
+    width: 100%;
+    height: 52px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .char-preview svg { width: 30px; height: 48px; display: block; transition: transform 0.2s ease; }
+  .char-option:hover .char-preview svg,
+  .char-option:active .char-preview svg {
+    transform: scale(1.35) translateY(-4px);
+  }
+  .char-option .launcher-arm {
+    transform-box: fill-box;
+    transform-origin: 70% 45%;
+  }
+  .char-option:hover .launcher-arm,
+  .char-option:active .launcher-arm {
+    animation: gun-reveal 0.5s ease forwards;
+  }
+  @keyframes gun-reveal {
+    0%   { transform: rotate(0deg) scale(1); }
+    35%  { transform: rotate(-22deg) scale(1.12); }
+    65%  { transform: rotate(6deg) scale(1.05); }
+    100% { transform: rotate(-8deg) scale(1.08); }
+  }
+  .char-option:hover, .char-option:active { z-index: 2; }
+  .char-option span {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.58rem;
+    font-weight: 700;
+    color: #dfefff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #name-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 2px solid rgba(140,190,220,0.3);
+    background: rgba(255,255,255,0.06);
+    color: white;
+    font-size: 0.95rem;
+    text-align: center;
+    margin-bottom: 16px;
+    outline: none;
+  }
+  #name-input::placeholder { color: #7f9cb0; }
+  #name-input:focus { border-color: var(--gold); }
+  #start-btn {
+    width: 100%;
+    background: var(--gold);
+    color: #1a1200;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-weight: 800;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+  #overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(5,15,25,0.75);
+    z-index: 50;
+    text-align: center;
+    padding: 20px;
+  }
+  #overlay .box {
+    background: var(--panel);
+    border: 2px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 26px 28px;
+    color: white;
+    max-width: 320px;
+  }
+  #overlay h2 { margin: 0 0 8px; font-size: 1.3rem; }
+  #overlay p { margin: 0 0 16px; color: #bcd; font-size: 0.85rem; }
+  #overlay button {
+    background: var(--gold);
+    color: #1a1200;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 22px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  #toast {
+    position: absolute;
+    top: 78px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 40;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-weight: 800;
+    font-size: 0.9rem;
+    color: white;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(6px); }
+  #toast.good { background: #1fae63; }
+  #toast.bad { background: #d3392f; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="start-screen">
+    <div class="decor-balloon" style="left:6%; top:10%; width:34px; height:44px; background:radial-gradient(circle at 35% 30%, #e0453c, #a8241e); animation-duration:3.2s;"></div>
+    <div class="decor-balloon" style="left:16%; top:62%; width:40px; height:52px; background:radial-gradient(circle at 35% 30%, #f0c419, #c99a0b); animation-duration:3.8s; animation-delay:0.4s;"></div>
+    <div class="decor-balloon" style="right:8%; top:8%; width:30px; height:40px; background:radial-gradient(circle at 35% 30%, #2f6fd6, #1c4a99); animation-duration:2.9s; animation-delay:0.2s;"></div>
+    <div class="decor-balloon" style="right:5%; top:68%; width:38px; height:50px; background:radial-gradient(circle at 35% 30%, #22a86b, #157048); animation-duration:3.5s; animation-delay:0.6s;"></div>
+    <div class="decor-balloon" style="left:2%; top:38%; width:28px; height:38px; background:radial-gradient(circle at 35% 30%, #e0459f, #a12d72); animation-duration:3s; animation-delay:0.8s;"></div>
+    <div class="decor-balloon" style="right:14%; top:38%; width:26px; height:36px; background:radial-gradient(circle at 35% 30%, #f28a1c, #c46a0e); animation-duration:3.3s; animation-delay:0.3s;"></div>
+    <div class="decor-balloon" style="left:24%; top:4%; width:24px; height:32px; background:radial-gradient(circle at 35% 30%, #4fd97a, #1c8a44); animation-duration:2.7s; animation-delay:1s;"></div>
+    <div class="decor-balloon" style="right:24%; top:4%; width:26px; height:34px; background:radial-gradient(circle at 35% 30%, #ffcf3f, #d9a413); animation-duration:3.6s; animation-delay:0.5s;"></div>
+    <div class="decor-balloon" style="left:9%; top:88%; width:30px; height:40px; background:radial-gradient(circle at 35% 30%, #8a5fd6, #5c3aa0); animation-duration:3.1s; animation-delay:0.7s;"></div>
+    <div class="decor-balloon" style="right:9%; top:90%; width:28px; height:38px; background:radial-gradient(circle at 35% 30%, #ff5f9e, #a12d72); animation-duration:3.4s; animation-delay:0.9s;"></div>
+    <div class="decor-balloon" style="left:0.5%; top:78%; width:22px; height:30px; background:radial-gradient(circle at 35% 30%, #3fbfd8, #1c7d94); animation-duration:2.8s; animation-delay:0.15s;"></div>
+    <div class="decor-balloon" style="right:1%; top:26%; width:24px; height:32px; background:radial-gradient(circle at 35% 30%, #e0453c, #a8241e); animation-duration:3.7s; animation-delay:1.1s;"></div>
+    <div class="start-box">
+      <h1><span class="title-red">Play</span> <span class="title-orange">&amp;</span> <span class="title-blue">Learn</span> <span class="title-yellow">Deutsch</span></h1>
+      <p class="start-sub">Choose your shooter and enter a name</p>
+      <div class="char-select" id="char-select"></div>
+      <input id="name-input" type="text" maxlength="14" placeholder="Write your name" value="">
+      <button id="start-btn">Start Game</button>
+      <button id="leaderboard-btn" class="secondary-btn">🏆 Leaderboard</button>
+    </div>
+  </div>
+
+  <div id="leaderboard-screen" class="hidden">
+    <div class="start-box">
+      <h1>🏆 Top 3 Scorers</h1>
+      <p class="start-sub">Best scores on this device</p>
+      <div id="leaderboard-list"></div>
+      <button id="leaderboard-close-btn">Back</button>
+    </div>
+  </div>
+  <div class="cloud" style="width:90px;height:34px;top:8%;left:8%;"></div>
+  <div class="cloud" style="width:70px;height:26px;top:14%;left:60%;"></div>
+  <div class="cloud" style="width:60px;height:22px;top:5%;left:75%;"></div>
+
+  <div class="skyline">
+    <svg viewBox="0 0 400 40" preserveAspectRatio="none" style="width:100%;height:100%;">
+      <rect x="10" y="14" width="18" height="26" fill="#6d84a0"/>
+      <rect x="34" y="6" width="14" height="34" fill="#5c7390"/>
+      <rect x="330" y="10" width="16" height="30" fill="#6d84a0"/>
+      <rect x="352" y="18" width="20" height="22" fill="#5c7390"/>
+    </svg>
+  </div>
+
+  <div class="tree" style="left:2%;">
+    <svg viewBox="0 0 46 70" style="width:100%;height:100%;">
+      <rect x="20" y="46" width="6" height="24" fill="#5a3d24"/>
+      <ellipse cx="23" cy="30" rx="20" ry="24" fill="#3f8f4f"/>
+      <ellipse cx="15" cy="22" rx="12" ry="14" fill="#4aa25b"/>
+      <ellipse cx="32" cy="26" rx="11" ry="13" fill="#2f7a40"/>
+    </svg>
+  </div>
+  <div class="tree" style="right:2%;">
+    <svg viewBox="0 0 46 70" style="width:100%;height:100%;">
+      <rect x="20" y="46" width="6" height="24" fill="#5a3d24"/>
+      <ellipse cx="23" cy="30" rx="20" ry="24" fill="#3f8f4f"/>
+      <ellipse cx="15" cy="22" rx="12" ry="14" fill="#4aa25b"/>
+      <ellipse cx="32" cy="26" rx="11" ry="13" fill="#2f7a40"/>
+    </svg>
+  </div>
+
+  <div id="monument-wrap">
+    <svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMax meet">
+      <defs>
+        <linearGradient id="stoneGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#f5f0e8"/>
+          <stop offset="100%" stop-color="#d6cdbe"/>
+        </linearGradient>
+        <linearGradient id="cliffGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#7c8a6e"/>
+          <stop offset="100%" stop-color="#4c5940"/>
+        </linearGradient>
+        <linearGradient id="roofGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#5a7fa6"/>
+          <stop offset="100%" stop-color="#33506e"/>
+        </linearGradient>
+        <linearGradient id="towerGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#c9c0ae"/>
+          <stop offset="20%" stop-color="#f8f3e7"/>
+          <stop offset="55%" stop-color="#efe8d8"/>
+          <stop offset="85%" stop-color="#f8f3e7"/>
+          <stop offset="100%" stop-color="#b8ae9a"/>
+        </linearGradient>
+      </defs>
+
+      <!-- cliff / hill -->
+      <path d="M0 260 L0 210 Q60 190 120 205 Q180 185 220 200 Q280 180 340 200 Q380 195 400 210 L400 260 Z" fill="url(#cliffGrad)"/>
+      <path d="M0 260 L0 225 Q80 208 160 222 Q240 205 320 222 Q365 214 400 226 L400 260 Z" fill="#3e4a34" opacity="0.55"/>
+
+      <!-- main keep -->
+      <rect x="150" y="90" width="80" height="130" fill="url(#towerGrad)"/>
+      <rect x="150" y="90" width="80" height="10" fill="#c9bfa8"/>
+      <!-- keep roof -->
+      <polygon points="146,90 190,48 234,90" fill="url(#roofGrad)"/>
+      <rect x="188" y="30" width="4" height="20" fill="#33506e"/>
+      <circle cx="190" cy="28" r="3.5" fill="#e8d24a"/>
+
+      <!-- left tall tower -->
+      <rect x="96" y="60" width="34" height="160" fill="url(#towerGrad)"/>
+      <polygon points="93,60 113,26 133,60" fill="url(#roofGrad)"/>
+      <rect x="111" y="10" width="3" height="18" fill="#33506e"/>
+      <circle cx="112.5" cy="8" r="3" fill="#e8d24a"/>
+
+      <!-- right tower -->
+      <rect x="256" y="76" width="30" height="144" fill="url(#towerGrad)"/>
+      <polygon points="253,76 271,44 289,76" fill="url(#roofGrad)"/>
+      <rect x="269" y="26" width="3" height="18" fill="#33506e"/>
+      <circle cx="270.5" cy="24" r="3" fill="#e8d24a"/>
+
+      <!-- small corner turret -->
+      <rect x="300" y="112" width="20" height="108" fill="url(#towerGrad)"/>
+      <polygon points="298,112 310,88 322,112" fill="url(#roofGrad)"/>
+
+      <!-- side wing connecting keep to towers -->
+      <rect x="130" y="140" width="20" height="80" fill="url(#stoneGrad)"/>
+      <rect x="230" y="150" width="26" height="70" fill="url(#stoneGrad)"/>
+
+      <!-- windows -->
+      <g fill="#2a3a4a">
+        <rect x="163" y="115" width="9" height="16" rx="4"/>
+        <rect x="188" y="115" width="9" height="16" rx="4"/>
+        <rect x="207" y="115" width="9" height="16" rx="4"/>
+        <rect x="163" y="150" width="9" height="16" rx="4"/>
+        <rect x="188" y="150" width="9" height="16" rx="4"/>
+        <rect x="207" y="150" width="9" height="16" rx="4"/>
+        <rect x="105" y="90" width="7" height="14" rx="3.5"/>
+        <rect x="105" y="130" width="7" height="14" rx="3.5"/>
+        <rect x="105" y="168" width="7" height="14" rx="3.5"/>
+        <rect x="266" y="100" width="7" height="14" rx="3.5"/>
+        <rect x="266" y="140" width="7" height="14" rx="3.5"/>
+      </g>
+
+      <!-- base wall / gate -->
+      <rect x="130" y="212" width="126" height="14" fill="#c9bfa8"/>
+      <path d="M182 226 v-22 a12 12 0 0 1 24 0 v22 Z" fill="#2a3a4a"/>
+
+      <!-- name plaque -->
+      <rect x="115" y="234" width="170" height="20" rx="4" fill="#3a4a3a" stroke="#1f2a1f" stroke-width="1"/>
+      <text x="200" y="248" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="13" font-weight="700" fill="#f4e9c8" letter-spacing="0.5">Schloss Neuschwanstein</text>
+    </svg>
+  </div>
+
+  <div id="ground"></div>
+
+  <div id="hud-top">
+    <div id="locale"><div id="flag"></div><div><b>Schwangau</b>Schloss Neuschwanstein</div></div>
+    <div id="prompt-box">
+      <div class="label">Shoot the German word for:</div>
+      <div class="word" id="prompt-word">—</div>
+    </div>
+    <div id="stats">
+      <div class="pill" style="color:var(--gold)">⭐ <span id="stat-stars">0</span></div>
+      <div class="pill" style="color:var(--heart)">❤ <span id="stat-hearts">3</span></div>
+      <div class="pill" style="color:var(--streak)">🔥 <span id="stat-streak">0</span></div>
+    </div>
+    <div class="pill" id="mute-btn" style="cursor:pointer;">🔊</div>
+  </div>
+  <div id="stage-counter">STAGE <span id="stat-stage">1</span>/<span id="stat-total">60</span></div>
+
+  <div id="live-leaderboard">
+    <div class="lb-title">🏆 Top 3</div>
+    <div id="live-leaderboard-rows"></div>
+  </div>
+
+  <div id="toast"></div>
+
+  <div id="dragon-wrap">
+    <div id="dragon-hp"><span>❤</span><span>❤</span><span>❤</span></div>
+    <svg viewBox="0 0 140 110">
+      <defs>
+        <linearGradient id="dragonBody" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#5fe07f"/>
+          <stop offset="100%" stop-color="#1f9e4a"/>
+        </linearGradient>
+        <linearGradient id="dragonWing" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#3fbf63" stop-opacity="0.95"/>
+          <stop offset="100%" stop-color="#1c7d3d" stop-opacity="0.9"/>
+        </linearGradient>
+      </defs>
+      <!-- tail -->
+      <path d="M40 70 Q10 78 6 60 Q22 66 40 60 Z" fill="url(#dragonBody)"/>
+      <!-- left wing -->
+      <g class="wing-left">
+        <path d="M60 45 Q20 20 8 42 Q34 40 46 56 Z" fill="url(#dragonWing)"/>
+      </g>
+      <!-- right wing -->
+      <g class="wing-right">
+        <path d="M80 45 Q120 20 132 42 Q106 40 94 56 Z" fill="url(#dragonWing)"/>
+      </g>
+      <!-- body -->
+      <ellipse cx="70" cy="58" rx="34" ry="22" fill="url(#dragonBody)"/>
+      <!-- belly -->
+      <ellipse cx="70" cy="66" rx="20" ry="12" fill="#cdeed0" opacity="0.85"/>
+      <!-- legs -->
+      <path d="M56 76 L52 90 L60 90 L62 78 Z" fill="#1c7d3d"/>
+      <path d="M84 76 L88 90 L80 90 L78 78 Z" fill="#1c7d3d"/>
+      <!-- head -->
+      <ellipse cx="102" cy="46" rx="18" ry="14" fill="url(#dragonBody)"/>
+      <!-- horns -->
+      <path d="M96 34 L92 22 L100 32 Z" fill="#e8d24a"/>
+      <path d="M108 34 L112 22 L104 32 Z" fill="#e8d24a"/>
+      <!-- snout -->
+      <path d="M114 44 Q126 44 126 50 Q126 54 116 54 Z" fill="#2fae5c"/>
+      <!-- eye -->
+      <circle cx="106" cy="44" r="3.4" fill="#fff"/>
+      <circle cx="107" cy="44" r="1.7" fill="#0c2233"/>
+      <!-- spikes -->
+      <path d="M56 46 L50 38 L58 42 Z" fill="#1c7d3d"/>
+      <path d="M46 52 L40 46 L48 48 Z" fill="#1c7d3d"/>
+    </svg>
+  </div>
+
+  <div id="player-wrap">
+    <div id="player-name">Rija</div>
+    <div id="player-svg-slot"></div>
+  </div>
+
+  <div id="overlay">
+    <div class="box">
+      <h2 id="overlay-title">Game Over</h2>
+      <p id="overlay-text">You ran out of hearts.</p>
+      <p id="overlay-rank"></p>
+      <div id="overlay-leaderboard"></div>
+      <button id="overlay-btn" onclick="restartGame()">Play again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Curated German IT vocabulary (term, part of speech, "gloss — full meaning").
+const VOCAB = [
+["die Datei","noun","file — a named unit of stored data, e.g. eine Datei speichern (to save a file)."],
+["der Rechner","noun","computer — colloquial synonym for der Computer."],
+["die Tastatur","noun","keyboard — the input device with keys."],
+["die Maus","noun","mouse — the pointing device."],
+["der Bildschirm","noun","screen — literally 'image screen'."],
+["das Kabel","noun","cable — a wire connecting devices."],
+["der Speicher","noun","memory — RAM or disk storage."],
+["die Festplatte","noun","hard drive — literally 'firm plate'."],
+["der Arbeitsspeicher","noun","RAM — literally 'working memory'."],
+["das Netzwerk","noun","network — a connected system of devices."],
+["der Router","noun","router — device that directs network traffic."],
+["die Verbindung","noun","connection — a link between systems or devices."],
+["die Verschlüsselung","noun","encryption — encoding data so only authorized parties can read it."],
+["der Quellcode","noun","source code — the human-readable code of a program."],
+["die Schnittstelle","noun","interface — a boundary where two systems interact, e.g. API."],
+["die Datenbank","noun","database — an organized collection of stored data."],
+["die Anwendung","noun","application — a software program, short: App."],
+["die Software","noun","software — programs and their data, as opposed to hardware."],
+["die Hardware","noun","hardware — the physical components of a computer."],
+["der Prozessor","noun","processor — the chip that executes instructions."],
+["die Grafikkarte","noun","graphics card — hardware rendering images and video."],
+["das Betriebssystem","noun","operating system — the core software managing hardware."],
+["der Treiber","noun","driver — software that lets the OS control hardware."],
+["die Firmware","noun","firmware — low-level software embedded in a device."],
+["das Update","noun","update — a new version of software, often fixing bugs."],
+["der Fehler","noun","error — a mistake in code causing wrong behavior."],
+["die Sicherheitslücke","noun","security vulnerability — literally 'security gap'."],
+["die Schadsoftware","noun","malware — software designed to cause harm."],
+["der Virus","noun","virus — malicious self-replicating program."],
+["die Firewall","noun","firewall — a system that blocks unauthorized network access."],
+["das Passwort","noun","password — a secret string used for authentication."],
+["die Anmeldung","noun","login — the act of authenticating into a system."],
+["der Benutzer","noun","user — a person using a system."],
+["die Berechtigung","noun","permission — the right to access something."],
+["der Zugriff","noun","access — the ability to reach or use a resource."],
+["die Datensicherung","noun","backup — literally 'data securing'."],
+["die Wiederherstellung","noun","recovery — bringing data back after loss."],
+["die Cloud","noun","cloud — remote servers accessed via the internet."],
+["der Server","noun","server — a computer providing services to other computers."],
+["der Client","noun","client — a device or program that requests services from a server."],
+["das Protokoll","noun","protocol — a set of rules for communication; also means 'log'."],
+["die Bandbreite","noun","bandwidth — the data-carrying capacity of a connection."],
+["die Latenz","noun","latency — the delay before data transfer begins."],
+["der Algorithmus","noun","algorithm — a defined sequence of steps to solve a problem."],
+["die Programmiersprache","noun","programming language — a formal language for writing code."],
+["die Funktion","noun","function — a reusable block of code performing a task."],
+["die Variable","noun","variable — a named storage location for a value."],
+["die Schleife","noun","loop — a control structure that repeats code."],
+["die Bedingung","noun","condition — a boolean expression controlling program flow."],
+["die Klasse","noun","class — a blueprint for creating objects in OOP."],
+["das Objekt","noun","object — an instance of a class."],
+["die Vererbung","noun","inheritance — an object-oriented concept where classes derive from others."],
+["der Stapel","noun","stack — a last-in-first-out data structure."],
+["die Warteschlange","noun","queue — a first-in-first-out data structure."],
+["der Zeiger","noun","pointer — a variable holding a memory address."],
+["der Compiler","noun","compiler — a program that compiles source code."],
+["der Interpreter","noun","interpreter — a program that executes code directly, line by line."],
+["die Version","noun","version — a specific release state of software."],
+["die Versionskontrolle","noun","version control — tracking changes to code over time, e.g. Git."],
+["der Zweig","noun","branch — a divergent line of development in version control."],
+["das Repository","noun","repository — a storage location for code and its history."],
+["die Bibliothek","noun","library — a collection of reusable code."],
+["das Framework","noun","framework — a structured foundation for building software."],
+["die Bereitstellung","noun","deployment — making software available for use."],
+["der Absturz","noun","crash — a sudden, unexpected failure of a program."],
+["der Ordner","noun","folder — a container for files."],
+["das Verzeichnis","noun","directory — formal term for a folder."],
+["der Pfad","noun","path — the location of a file or folder in a hierarchy."],
+["die Erweiterung","noun","extension — the suffix indicating file type, or a plugin."],
+["das Plug-in","noun","plugin — add-on software extending an application's features."],
+["die Installation","noun","installation — the process of setting up software."],
+["die Konfiguration","noun","configuration — the settings of a system or program."],
+["die Kompatibilität","noun","compatibility — the ability of systems to work together."],
+["die Skalierbarkeit","noun","scalability — the ability of a system to handle growth."],
+["die Verfügbarkeit","noun","availability — how reliably a system is accessible."],
+["die Redundanz","noun","redundancy — duplicated components for reliability."],
+["die Virtualisierung","noun","virtualization — creating virtual versions of hardware or systems."],
+["der Container","noun","container — a lightweight, isolated unit for running software."],
+["das Rechenzentrum","noun","data center — a facility housing computer systems."],
+["die künstliche Intelligenz","noun","artificial intelligence — machines simulating human-like reasoning."],
+["das maschinelle Lernen","noun","machine learning — systems that improve from data without explicit programming."],
+["das neuronale Netz","noun","neural network — a model inspired by the brain's structure."],
+["der Datensatz","noun","dataset — a structured collection of data."],
+["die Datenanalyse","noun","data analysis — examining data to draw conclusions."],
+["die Suchmaschine","noun","search engine — software that finds information, e.g. Google."],
+["die Webseite","noun","webpage — a single page of a website."],
+["der Browser","noun","browser — software for viewing webpages."],
+["der Hyperlink","noun","hyperlink — a clickable reference to another location."],
+["die IP-Adresse","noun","IP address — a unique numerical label for a device on a network."],
+["der Hackerangriff","noun","hacker attack — an attempt to breach a system's security."],
+["der Cyberangriff","noun","cyberattack — a malicious attempt to damage or access a system."],
+["die Authentifizierung","noun","authentication — verifying the identity of a user or system."],
+["die Autorisierung","noun","authorization — granting permission to access resources."],
+["das Zertifikat","noun","certificate — a digital document verifying identity or encryption keys."],
+["der Schlüssel","noun","key — a piece of data used in cryptography."],
+["die Signatur","noun","signature — a digital marker verifying authenticity."],
+["der Puffer","noun","buffer — temporary storage used during data transfer."],
+["die Eingabe","noun","input — data entered into a system."],
+["die Ausgabe","noun","output — data produced by a system."],
+["die Benutzeroberfläche","noun","user interface — the means by which a user interacts with a system."],
+["die Benutzererfahrung","noun","user experience — the overall experience a user has with a product."],
+["das Menü","noun","menu — a list of selectable options in software."],
+["die Schaltfläche","noun","button — a clickable UI element."],
+["der Cursor","noun","cursor — the on-screen pointer indicating position."],
+["die Zwischenablage","noun","clipboard — temporary storage for copy-paste operations."],
+["die Auflösung","noun","resolution — the pixel density of a screen or image."],
+["das Pixel","noun","pixel — the smallest unit of a digital image."],
+["das Fenster","noun","window — a UI frame containing an application."],
+["die Registerkarte","noun","tab — a UI element for switching between views."],
+["der Prozess","noun","process — an instance of a running program."],
+["die Leistung","noun","performance — how efficiently a system operates."],
+["die Optimierung","noun","optimization — improving a system's efficiency or performance."],
+["die Lastverteilung","noun","load balancing — distributing work across multiple resources."],
+["der Zwischenspeicher","noun","cache — a component storing data for quick reuse."],
+["die Sitzung","noun","session — a period of interaction between user and system."],
+["das Cookie","noun","cookie — a small file stored by a browser to remember data."],
+["die Automatisierung","noun","automation — using technology to perform tasks without manual effort."],
+["das Skript","noun","script — a short program automating a task."],
+["die Befehlszeile","noun","command line — a text interface for issuing commands."],
+["der Befehl","noun","command — an instruction given to a computer."],
+["die Syntax","noun","syntax — the rules governing the structure of code."],
+["die Dokumentation","noun","documentation — written material explaining how software works."],
+["die Migration","noun","migration — moving data or systems to a new environment."],
+["die Integration","noun","integration — combining separate systems into one working whole."],
+["die Plattform","noun","platform — a base system on which software runs."],
+["der Kernel","noun","kernel — the core of an operating system."],
+["der Thread","noun","thread — the smallest sequence of programmed instructions managed independently."],
+["das Speicherleck","noun","memory leak — a bug where memory is not properly released."],
+];
+
+function gloss(meaning) {
+  return meaning.split('—')[0].trim();
+}
+const WORDS = VOCAB.map(v => ({ de: v[0], en: gloss(v[2]) }));
+
+const BALLOON_COLORS = [
+  ['#e0453c', '#a8241e'],
+  ['#f0c419', '#c99a0b'],
+  ['#2f6fd6', '#1c4a99'],
+  ['#e0459f', '#a12d72'],
+  ['#22a86b', '#157048'],
+  ['#f28a1c', '#c46a0e'],
+];
+
+let deck = [];
+const DEFAULT_LIVES = 3;
+const MAX_LIVES = 6;
+let stars = 0, hearts = DEFAULT_LIVES, streak = 0, stageNum = 1;
+const TOTAL_STAGES = 60;
+let current = null; // {target, balloons: [...]}
+let playerX = 50; // percent
+let moveTimer = null;
+const stage = document.getElementById('stage');
+const promptWord = document.getElementById('prompt-word');
+const statStars = document.getElementById('stat-stars');
+const statHearts = document.getElementById('stat-hearts');
+const statStreak = document.getElementById('stat-streak');
+const statStage = document.getElementById('stat-stage');
+document.getElementById('stat-total').textContent = TOTAL_STAGES;
+const playerWrap = document.getElementById('player-wrap');
+const overlay = document.getElementById('overlay');
+const toast = document.getElementById('toast');
+
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+function playShotSound() {
+  ensureAudio();
+  const t = audioCtx.currentTime;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(950, t);
+  osc.frequency.exponentialRampToValueAtTime(140, t + 0.16);
+  gain.gain.setValueAtTime(0.22, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start(t);
+  osc.stop(t + 0.2);
+}
+function playCorrectSound() {
+  ensureAudio();
+  const t = audioCtx.currentTime;
+  [660, 880, 1108].forEach((f, i) => {
+    const start = t + i * 0.08;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(f, start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.25, start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.22);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(start);
+    osc.stop(start + 0.24);
+  });
+}
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function refillDeck() {
+  deck = shuffle(WORDS);
+}
+
+function showToast(text, cls) {
+  toast.textContent = text;
+  toast.className = 'show ' + cls;
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { toast.className = ''; }, 900);
+}
+
+function updateHud() {
+  statStars.textContent = stars;
+  statHearts.textContent = hearts;
+  statStreak.textContent = streak;
+  statStage.textContent = Math.min(stageNum, TOTAL_STAGES);
+  renderLiveLeaderboard();
+}
+
+function clearBalloons() {
+  document.querySelectorAll('.balloon').forEach(el => el.remove());
+}
+
+function nextRound() {
+  clearBalloons();
+  if (!deck.length) refillDeck();
+  const targetEntry = deck.pop();
+  const distractorPool = WORDS.filter(w => w.de !== targetEntry.de);
+  const distractors = shuffle(distractorPool).slice(0, 4);
+  const options = shuffle([targetEntry, ...distractors]);
+
+  promptWord.textContent = targetEntry.en;
+
+  const positions = [10, 28, 48, 66, 84]; // percent left, spread across width
+  const shuffledPositions = shuffle(positions).slice(0, options.length);
+
+  current = { target: targetEntry, balloons: [] };
+
+  options.forEach((opt, i) => {
+    const b = document.createElement('div');
+    b.className = 'balloon';
+    const colors = BALLOON_COLORS[i % BALLOON_COLORS.length];
+    b.style.background = `radial-gradient(circle at 35% 30%, ${colors[0]}, ${colors[1]})`;
+    b.style.left = shuffledPositions[i] + '%';
+    b.style.top = (14 + Math.random() * 24) + '%';
+    b.style.animationDuration = (3 + Math.random() * 2) + 's';
+    const shine = document.createElement('div');
+    shine.className = 'shine';
+    b.appendChild(shine);
+    const label = document.createElement('div');
+    label.className = 'label';
+    label.textContent = opt.de;
+    b.appendChild(label);
+    b.dataset.de = opt.de;
+    b.dataset.correct = (opt.de === targetEntry.de) ? '1' : '0';
+    stage.appendChild(b);
+    current.balloons.push(b);
+  });
+}
+
+// Player is the control: drag left/right to move, tap (no drag) to fire.
+let isDraggingPlayer = false;
+let dragMoved = false;
+let dragStartClientX = 0;
+let dragStartPlayerX = 0;
+const TAP_MOVE_THRESHOLD = 8; // px of finger movement before it counts as a drag, not a tap
+
+playerWrap.addEventListener('pointerdown', (e) => {
+  isDraggingPlayer = true;
+  dragMoved = false;
+  dragStartClientX = e.clientX;
+  dragStartPlayerX = playerX;
+  playerWrap.classList.add('dragging');
+  playerWrap.style.cursor = 'grabbing';
+  try { playerWrap.setPointerCapture(e.pointerId); } catch (err) {}
+});
+
+playerWrap.addEventListener('pointermove', (e) => {
+  if (!isDraggingPlayer) return;
+  const dx = e.clientX - dragStartClientX;
+  if (Math.abs(dx) > TAP_MOVE_THRESHOLD) dragMoved = true;
+  const stageRect = stage.getBoundingClientRect();
+  const deltaPercent = (dx / stageRect.width) * 100;
+  playerX = Math.max(6, Math.min(94, dragStartPlayerX + deltaPercent));
+  playerWrap.style.left = playerX + '%';
+});
+
+function endPlayerDrag(e) {
+  if (!isDraggingPlayer) return;
+  isDraggingPlayer = false;
+  playerWrap.classList.remove('dragging');
+  playerWrap.style.cursor = 'grab';
+  if (!dragMoved) {
+    fire();
+  }
+}
+playerWrap.addEventListener('pointerup', endPlayerDrag);
+playerWrap.addEventListener('pointercancel', endPlayerDrag);
+playerWrap.addEventListener('pointerleave', (e) => {
+  // only end the drag on leave if the pointer isn't captured (rare fallback)
+  if (isDraggingPlayer && e.buttons === 0) endPlayerDrag(e);
+});
+
+function fire() {
+  if (hearts <= 0) return;
+  playShotSound();
+  playerWrap.classList.remove('firing');
+  void playerWrap.offsetWidth; // restart animation
+  playerWrap.classList.add('firing');
+
+  const stageRect = stage.getBoundingClientRect();
+  const startX = (playerX / 100) * stageRect.width;
+  const startY = stageRect.height * 0.82;
+  const rocket = document.createElement('div');
+  rocket.className = 'rocket';
+  rocket.innerHTML = `
+    <div class="r-flame"></div>
+    <div class="r-fin left"></div>
+    <div class="r-fin right"></div>
+    <div class="r-body"></div>
+    <div class="r-band"></div>
+    <div class="r-nose"></div>
+  `;
+  rocket.style.left = startX + 'px';
+  rocket.style.top = startY + 'px';
+  stage.appendChild(rocket);
+
+  let y = startY;
+  const speed = 10;
+  let hit = false;
+  let frame = 0;
+
+  function step() {
+    y -= speed;
+    rocket.style.top = y + 'px';
+    frame++;
+
+    if (frame % 2 === 0) {
+      const t = document.createElement('div');
+      t.className = 'trail-spark';
+      const size = 5 + Math.random() * 4;
+      t.style.width = size + 'px';
+      t.style.height = size + 'px';
+      t.style.left = (startX - size / 2) + 'px';
+      t.style.top = (y + 24) + 'px';
+      stage.appendChild(t);
+      setTimeout(() => t.remove(), 420);
+    }
+
+    if (!hit && dragonActive) {
+      const dr = dragonWrap.getBoundingClientRect();
+      const relLeft = dr.left - stageRect.left;
+      const relRight = dr.right - stageRect.left;
+      const relTop = dr.top - stageRect.top;
+      const relBottom = dr.bottom - stageRect.top;
+      if (startX >= relLeft && startX <= relRight && y >= relTop && y <= relBottom) {
+        hit = true;
+        rocket.remove();
+        hitDragon();
+      }
+    }
+
+    if (!hit) {
+      current.balloons.forEach(b => {
+        if (hit || !b.isConnected) return;
+        const br = b.getBoundingClientRect();
+        const relLeft = br.left - stageRect.left;
+        const relRight = br.right - stageRect.left;
+        const relTop = br.top - stageRect.top;
+        const relBottom = br.bottom - stageRect.top;
+        if (startX >= relLeft && startX <= relRight && y >= relTop && y <= relBottom) {
+          hit = true;
+          rocket.remove();
+          resolveHit(b);
+        }
+      });
+    }
+
+    if (!hit && y > -40) {
+      requestAnimationFrame(step);
+    } else if (!hit) {
+      rocket.remove();
+    }
+  }
+  requestAnimationFrame(step);
+}
+
+function spark(x, y, colorGrad) {
+  for (let i = 0; i < 10; i++) {
+    const p = document.createElement('div');
+    p.className = 'spark';
+    const size = 4 + Math.random() * 5;
+    p.style.width = size + 'px';
+    p.style.height = size + 'px';
+    p.style.left = x + 'px';
+    p.style.top = y + 'px';
+    p.style.background = colorGrad;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 26 + Math.random() * 30;
+    p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+    p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+    stage.appendChild(p);
+    setTimeout(() => p.remove(), 520);
+  }
+}
+
+const dragonWrap = document.getElementById('dragon-wrap');
+const dragonHpEl = document.getElementById('dragon-hp');
+let dragonActive = false;
+let dragonHP = 0;
+let dragonX = 50, dragonY = 18, dragonDir = 1;
+let dragonFlying = false;
+
+function updateDragonHp() {
+  const hearts = dragonHpEl.querySelectorAll('span');
+  hearts.forEach((h, i) => h.classList.toggle('lost', i >= dragonHP));
+}
+
+function dragonFlightLoop(ts) {
+  if (!dragonActive) { dragonFlying = false; return; }
+  dragonX += dragonDir * 0.35;
+  if (dragonX > 86) dragonDir = -1;
+  if (dragonX < 10) dragonDir = 1;
+  const bob = Math.sin(ts / 500) * 4;
+  dragonWrap.style.left = dragonX + '%';
+  dragonWrap.style.top = (dragonY + bob) + '%';
+  dragonWrap.style.transform = dragonDir < 0 ? 'scaleX(-1)' : 'scaleX(1)';
+  requestAnimationFrame(dragonFlightLoop);
+}
+
+function spawnDragon() {
+  if (dragonActive) return;
+  dragonActive = true;
+  dragonHP = 3;
+  dragonDir = Math.random() < 0.5 ? 1 : -1;
+  dragonX = 15 + Math.random() * 10;
+  dragonY = 12 + Math.random() * 10;
+  updateDragonHp();
+  dragonWrap.classList.remove('dying');
+  dragonWrap.classList.add('show');
+  if (!dragonFlying) {
+    dragonFlying = true;
+    requestAnimationFrame(dragonFlightLoop);
+  }
+}
+
+function hitDragon() {
+  dragonHP -= 1;
+  updateDragonHp();
+  const br = dragonWrap.getBoundingClientRect();
+  const stageRect = stage.getBoundingClientRect();
+  spark(br.left - stageRect.left + br.width / 2, br.top - stageRect.top + br.height / 2, 'radial-gradient(circle,#a6f2b6,#2f9e4a)');
+
+  if (dragonHP <= 0) {
+    dragonWrap.classList.add('dying');
+    playCorrectSound();
+    showToast('Dragon down! +3 Lives 🐉', 'good');
+    hearts = Math.min(MAX_LIVES, hearts + 3);
+    updateHud();
+    setTimeout(() => {
+      dragonWrap.classList.remove('show', 'dying');
+      dragonActive = false;
+    }, 480);
+  } else {
+    dragonWrap.classList.remove('hurt');
+    void dragonWrap.offsetWidth;
+    dragonWrap.classList.add('hurt');
+    showToast('Hit! ' + dragonHP + ' left', 'bad');
+  }
+}
+
+function resolveHit(b) {
+  const br = b.getBoundingClientRect();
+  const stageRect = stage.getBoundingClientRect();
+  spark(br.left - stageRect.left + br.width / 2, br.top - stageRect.top + br.height / 2, b.style.background);
+  b.classList.add('popping');
+  setTimeout(() => b.remove(), 260);
+  current.balloons = current.balloons.filter(x => x !== b);
+
+  if (b.dataset.correct === '1') {
+    playCorrectSound();
+    stars += 10;
+    streak += 1;
+    stageNum = Math.min(stageNum + 1, TOTAL_STAGES);
+    showToast('Richtig! ✔', 'good');
+    updateHud();
+    setTimeout(() => {
+      if (stageNum >= TOTAL_STAGES) {
+        winGame();
+      } else {
+        nextRound();
+      }
+    }, 500);
+  } else {
+    hearts -= 1;
+    streak = 0;
+    showToast('Falsch ✘', 'bad');
+    updateHud();
+    if (hearts === 1 && !dragonActive) {
+      spawnDragon();
+    }
+    if (hearts <= 0) {
+      setTimeout(loseGame, 400);
+    }
+  }
+}
+
+function loseGame() {
+  clearBalloons();
+  dragonActive = false;
+  dragonWrap.classList.remove('show', 'dying', 'hurt');
+  const { list, entry } = recordScore(playerName, selectedKey, stars, stageNum);
+  const rank = list.findIndex(e => e.date === entry.date) + 1;
+  document.getElementById('overlay-title').textContent = 'Game over';
+  document.getElementById('overlay-text').textContent = 'Out of hearts — you reached stage ' + stageNum + ' with ' + stars + ' stars.';
+  document.getElementById('overlay-rank').textContent = 'Your rank: #' + rank + ' of ' + list.length;
+  document.getElementById('overlay-leaderboard').innerHTML = renderLeaderboardRows(list, entry.date);
+  document.getElementById('overlay-btn').textContent = 'Play again';
+  overlay.style.display = 'flex';
+}
+
+function winGame() {
+  clearBalloons();
+  const { list, entry } = recordScore(playerName, selectedKey, stars, stageNum);
+  const rank = list.findIndex(e => e.date === entry.date) + 1;
+  document.getElementById('overlay-title').textContent = 'Stage clear!';
+  document.getElementById('overlay-text').textContent = 'You finished all ' + TOTAL_STAGES + ' stages with ' + stars + ' stars.';
+  document.getElementById('overlay-rank').textContent = 'Your rank: #' + rank + ' of ' + list.length;
+  document.getElementById('overlay-leaderboard').innerHTML = renderLeaderboardRows(list, entry.date);
+  document.getElementById('overlay-btn').textContent = 'Play again';
+  overlay.style.display = 'flex';
+}
+
+function restartGame() {
+  overlay.style.display = 'none';
+  stars = 0; hearts = DEFAULT_LIVES; streak = 0; stageNum = 1;
+  dragonActive = false;
+  dragonWrap.classList.remove('show', 'dying', 'hurt');
+  updateHud();
+  refillDeck();
+  nextRound();
+}
+
+function shade(hex, pct) {
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n >> 16) & 0xff, g = (n >> 8) & 0xff, b = n & 0xff;
+  r = Math.max(0, Math.min(255, Math.round(r + (pct / 100) * 255)));
+  g = Math.max(0, Math.min(255, Math.round(g + (pct / 100) * 255)));
+  b = Math.max(0, Math.min(255, Math.round(b + (pct / 100) * 255)));
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+function hairShapesShort(color) {
+  return `
+    <path d="M31 34 Q30 24 38 20 L34 34 Z" fill="${color}"/>
+    <path d="M69 34 Q70 24 62 20 L66 34 Z" fill="${color}"/>
+    <path d="M30 24 L34 12 L40 22 L46 10 L52 22 L58 10 L64 22 L70 24 Q70 30 50 30 Q30 30 30 24 Z" fill="${color}"/>`;
+}
+function hairShapesMedium(color) {
+  return `
+    <path d="M26 30 Q21 46 27 56 Q32 46 30 30 Z" fill="${color}"/>
+    <path d="M74 30 Q79 46 73 56 Q68 46 70 30 Z" fill="${color}"/>
+    <path d="M28 22 Q50 5 72 22 Q72 13 50 9 Q28 13 28 22 Z" fill="${color}"/>
+    <path d="M30 24 Q50 15 70 24 Q68 19 50 17 Q32 19 30 24 Z" fill="rgba(0,0,0,0.15)"/>`;
+}
+function hairShapesLong(color, veryLong) {
+  const endY = veryLong ? 134 : 100;
+  const midY = Math.round((30 + endY) / 2);
+  return `
+    <path d="M22 30 Q17 ${midY} 26 ${endY} Q34 ${endY - 6} 30 58 Q27 40 22 30 Z" fill="${color}"/>
+    <path d="M78 30 Q83 ${midY} 74 ${endY} Q66 ${endY - 6} 70 58 Q73 40 78 30 Z" fill="${color}"/>
+    <path d="M30 26 Q50 8 70 26 Q70 18 50 15 Q30 18 30 26 Z" fill="${color}"/>
+    <path d="M32 28 Q50 20 68 28 Q66 24 50 22 Q34 24 32 28 Z" fill="rgba(0,0,0,0.16)"/>`;
+}
+
+function personSVG(opts, sfx) {
+  const isBoy = opts.gender === 'boy';
+  const outfit = opts.outfitColor;
+  const outfitLight = shade(outfit, 22);
+  const leg = opts.legColor;
+  const legLight = shade(leg, 20);
+  const legDark = shade(leg, -18);
+  const skin = '#f0c194';
+  let hair = '';
+  if (opts.hairLength === 'short') hair = hairShapesShort(opts.hairColor);
+  else if (opts.hairLength === 'medium') hair = hairShapesMedium(opts.hairColor);
+  else hair = hairShapesLong(opts.hairColor, opts.hairLength === 'verylong');
+
+  const flagDefs = opts.flagOutfit ? `
+    <linearGradient id="flag${sfx}" x1="0" y1="52" x2="0" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1a1a1a"/><stop offset="33%" stop-color="#1a1a1a"/>
+      <stop offset="33%" stop-color="#d00000"/><stop offset="66%" stop-color="#d00000"/>
+      <stop offset="66%" stop-color="#ffce00"/><stop offset="100%" stop-color="#ffce00"/>
+    </linearGradient>` : '';
+  const outfitFill = opts.flagOutfit ? `url(#flag${sfx})` : outfit;
+
+  const capMarkup = opts.capColor ? `
+    <path d="M30 22 Q50 6 70 22 Q70 16 50 13 Q30 16 30 22 Z" fill="${opts.capColor}"/>
+    <path d="M28 22 Q50 14 72 22 L74 27 Q50 19 26 27 Z" fill="${shade(opts.capColor, -30)}"/>` : '';
+
+  const lowerBody = isBoy ? `
+    <rect x="35" y="104" width="12" height="34" rx="4" fill="${skin}"/>
+    <rect x="53" y="104" width="12" height="34" rx="4" fill="${skin}"/>
+    <path d="M33 134 h16 q3 0 3 4 v2 h-21 q0 -4 2 -6 Z" fill="#2a3946"/>
+    <path d="M51 134 h16 q3 0 3 4 v2 h-21 q0 -4 2 -6 Z" fill="#2a3946"/>
+    <rect x="33" y="136" width="19" height="2.5" fill="#fff" opacity="0.85"/>
+    <rect x="51" y="136" width="19" height="2.5" fill="#fff" opacity="0.85"/>
+    <path d="M34 64 Q50 57 66 64 L68 102 Q50 108 32 102 Z" fill="${leg}"/>
+    <path d="M34 64 Q50 55 66 64 L67 88 Q50 94 33 88 Z" fill="${outfitFill}"/>
+    <path d="M34 64 Q50 55 66 64 L67 72 Q50 66 33 72 Z" fill="rgba(255,255,255,0.15)"/>
+  ` : `
+    <rect x="34" y="104" width="13" height="34" rx="5" fill="${leg}"/>
+    <rect x="53" y="104" width="13" height="34" rx="5" fill="${leg}"/>
+    <path d="M32 134 h17 q3 0 3 4 v2 h-22 q0 -4 2 -6 Z" fill="${outfitLight}"/>
+    <path d="M51 134 h17 q3 0 3 4 v2 h-22 q0 -4 2 -6 Z" fill="${outfitLight}"/>
+    <rect x="32" y="136" width="20" height="2.5" fill="#fff" opacity="0.85"/>
+    <rect x="51" y="136" width="20" height="2.5" fill="#fff" opacity="0.85"/>
+    <path d="M34 64 Q50 55 66 64 L72 106 Q50 114 28 106 Z" fill="${outfitFill}"/>
+    <path d="M34 64 Q50 55 66 64 L67 72 Q50 65 33 72 Z" fill="rgba(255,255,255,0.18)"/>
+    <circle cx="50" cy="82" r="2.6" fill="#fff" opacity="0.9"/>
+    <circle cx="42" cy="90" r="2.2" fill="#fff" opacity="0.7"/>
+    <circle cx="58" cy="94" r="2.2" fill="#fff" opacity="0.7"/>
+  `;
+
+  const gunColor = opts.gunColor || outfit;
+  const gunDark = shade(gunColor, -30);
+  const gunLight = shade(gunColor, 30);
+
+  return `<svg viewBox="0 0 100 150">
+    <defs>${flagDefs}</defs>
+    <ellipse cx="50" cy="146" rx="24" ry="5" fill="rgba(0,0,0,0.22)"/>
+    ${lowerBody}
+    <rect x="21" y="66" width="10" height="30" rx="5" fill="${outfitFill}"/>
+    <circle cx="26" cy="98" r="5.5" fill="${skin}"/>
+    <g class="launcher-arm">
+      <rect x="66" y="10" width="9" height="82" rx="4" fill="${gunDark}" transform="rotate(18 70 62)"/>
+      <rect x="60" y="4" width="19" height="11" rx="2.5" fill="${gunLight}" transform="rotate(18 70 62)"/>
+      <rect x="67" y="58" width="9" height="36" rx="4.5" fill="${outfitFill}"/>
+      <circle cx="72" cy="96" r="5.5" fill="${skin}"/>
+    </g>
+    <rect x="45" y="46" width="10" height="10" fill="${skin}"/>
+    <circle cx="50" cy="35" r="19" fill="${skin}"/>
+    <ellipse cx="30" cy="36" rx="2.6" ry="3.6" fill="${skin}"/>
+    <ellipse cx="70" cy="36" rx="2.6" ry="3.6" fill="${skin}"/>
+    ${hair}
+    ${capMarkup}
+    <circle cx="43" cy="36" r="2.1" fill="#2a1a12"/>
+    <circle cx="57" cy="36" r="2.1" fill="#2a1a12"/>
+    <circle cx="43.6" cy="35.2" r="0.6" fill="#fff"/>
+    <circle cx="57.6" cy="35.2" r="0.6" fill="#fff"/>
+    <ellipse cx="38" cy="42" rx="3" ry="1.8" fill="#ff9fb0" opacity="0.55"/>
+    <ellipse cx="62" cy="42" rx="3" ry="1.8" fill="#ff9fb0" opacity="0.55"/>
+    <path d="M45 44 Q50 47 55 44" stroke="#a5583c" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+  </svg>`;
+}
+
+// ---- character roster: 10 named characters + 2 fully customizable ones ----
+const ROSTER = [
+  { key: 'javed',   name: 'Javed',   gender: 'boy',  hairColor: '#5a3420', hairLength: 'long',   outfitColor: '#e0453c', legColor: '#20344d', gunColor: '#f4c430', capColor: '#1f9e4a', flagOutfit: true },
+  { key: 'rasil',   name: 'Rasil',   gender: 'boy',  hairColor: '#1a1a1a', hairLength: 'short',    outfitColor: '#2f7fd6', legColor: '#20344d' },
+  { key: 'aneeb',   name: 'Aneeb',   gender: 'boy',  hairColor: '#3a2416', hairLength: 'short',    outfitColor: '#2f9e5c', legColor: '#20344d' },
+  { key: 'zain',    name: 'Zain',    gender: 'boy',  hairColor: '#241209', hairLength: 'short',    outfitColor: '#6a3fb0', legColor: '#20344d' },
+  { key: 'saira',   name: 'Saira',   gender: 'girl', hairColor: '#0d0d0f', hairLength: 'verylong', outfitColor: '#16b6a6', legColor: '#565d70' },
+  { key: 'feza',    name: 'Feza',    gender: 'girl', hairColor: '#b83a2e', hairLength: 'long',     outfitColor: '#8a4fd6', legColor: '#a288e0' },
+  { key: 'rijja',   name: 'Rijja',   gender: 'girl', hairColor: '#e8c565', hairLength: 'long',     outfitColor: '#ff5f9e', legColor: '#7c5cc7' },
+  { key: 'ajnak',   name: 'Ajnak',   gender: 'girl', hairColor: '#5a3420', hairLength: 'long',     outfitColor: '#f2954a', legColor: '#6b4a35' },
+  { key: 'aysha',   name: 'Aysha',   gender: 'girl', hairColor: '#8a5fd6', hairLength: 'long',     outfitColor: '#3a8fe0', legColor: '#24406b' },
+  { key: 'mahrukh', name: 'Mahrukh', gender: 'girl', hairColor: '#3fae6b', hairLength: 'long',     outfitColor: '#e8b23c', legColor: '#6b6b40' },
+  { key: 'boy',     name: '',        label: 'Custom', gender: 'boy',  hairColor: '#4a2a1a', hairLength: 'short',    outfitColor: '#4a6fa5', legColor: '#20344d' },
+  { key: 'girl',    name: '',        label: 'Custom', gender: 'girl', hairColor: '#1f9e8a', hairLength: 'long',     outfitColor: '#d98a6b', legColor: '#6b6b75' },
+];
+function rosterEntry(key) {
+  return ROSTER.find(r => r.key === key) || ROSTER[0];
+}
+
+
+// ---- background music (synthesized, no external files) ----
+let musicEnabled = true;
+let musicTimer = null;
+let musicStep = 0;
+function startMusic() {
+  if (musicTimer) return;
+  const stepDur = 0.15;
+  const bassPattern = [98, 98, 130.81, 98, 116.54, 98, 130.81, 146.83];
+  const leadPattern = [392, 0, 440, 0, 494, 0, 440, 392];
+  function scheduleStep() {
+    if (musicEnabled && audioCtx) {
+      const t = audioCtx.currentTime + 0.02;
+      const bOsc = audioCtx.createOscillator();
+      const bGain = audioCtx.createGain();
+      bOsc.type = 'square';
+      bOsc.frequency.setValueAtTime(bassPattern[musicStep % bassPattern.length], t);
+      bGain.gain.setValueAtTime(0.09, t);
+      bGain.gain.exponentialRampToValueAtTime(0.001, t + stepDur * 0.85);
+      bOsc.connect(bGain).connect(audioCtx.destination);
+      bOsc.start(t); bOsc.stop(t + stepDur);
+
+      const leadFreq = leadPattern[musicStep % leadPattern.length];
+      if (leadFreq > 0) {
+        const lOsc = audioCtx.createOscillator();
+        const lGain = audioCtx.createGain();
+        lOsc.type = 'triangle';
+        lOsc.frequency.setValueAtTime(leadFreq, t);
+        lGain.gain.setValueAtTime(0.05, t);
+        lGain.gain.exponentialRampToValueAtTime(0.001, t + stepDur * 0.8);
+        lOsc.connect(lGain).connect(audioCtx.destination);
+        lOsc.start(t); lOsc.stop(t + stepDur);
+      }
+
+      if (musicStep % 2 === 1) {
+        const bufferSize = Math.floor(audioCtx.sampleRate * 0.03);
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.3;
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        const hp = audioCtx.createBiquadFilter();
+        hp.type = 'highpass'; hp.frequency.value = 6000;
+        const hGain = audioCtx.createGain();
+        hGain.gain.setValueAtTime(0.06, t);
+        hGain.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+        noise.connect(hp).connect(hGain).connect(audioCtx.destination);
+        noise.start(t); noise.stop(t + 0.03);
+      }
+    }
+    musicStep++;
+  }
+  musicTimer = setInterval(scheduleStep, stepDur * 1000);
+}
+function toggleMusic() {
+  musicEnabled = !musicEnabled;
+  muteBtn.textContent = musicEnabled ? '🔊' : '🔇';
+}
+
+function svgFor(key, sfx) {
+  return personSVG(rosterEntry(key), sfx);
+}
+
+// ---- leaderboard (stored in this browser; shared across everyone who plays on this device) ----
+const LB_KEY = 'itShooterLeaderboard_v1';
+function loadLeaderboard() {
+  try { return JSON.parse(localStorage.getItem(LB_KEY)) || []; } catch (e) { return []; }
+}
+function saveLeaderboardList(list) {
+  try { localStorage.setItem(LB_KEY, JSON.stringify(list)); } catch (e) {}
+}
+function recordScore(name, gender, starsVal, stageVal) {
+  const list = loadLeaderboard();
+  const entry = { name: name, gender: gender, stars: starsVal, stage: stageVal, date: Date.now() };
+  list.push(entry);
+  list.sort((a, b) => b.stars - a.stars);
+  const trimmed = list.slice(0, 50);
+  saveLeaderboardList(trimmed);
+  return { list: trimmed, entry: entry };
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function renderLeaderboardRows(list, highlightDate) {
+  if (!list.length) return '<div class="lb-empty">No scores yet — be the first!</div>';
+  return list.slice(0, 3).map((e, i) => {
+    const isMe = highlightDate && e.date === highlightDate;
+    return `<div class="lb-row${isMe ? ' me' : ''}"><span class="lb-rank">${i + 1}</span><span class="lb-name">${escapeHtml(e.name)}</span><span class="lb-stars">${e.stars}⭐</span><span class="lb-stage">S${e.stage}</span></div>`;
+  }).join('');
+}
+function computeLiveTopThree() {
+  const stored = loadLeaderboard();
+  const liveEntry = { name: playerName + ' (live)', gender: selectedKey, stars: stars, stage: stageNum, live: true };
+  return stored.concat([liveEntry]).sort((a, b) => b.stars - a.stars).slice(0, 3);
+}
+function renderLiveLeaderboard() {
+  const el = document.getElementById('live-leaderboard-rows');
+  if (!el) return;
+  const list = computeLiveTopThree();
+  el.innerHTML = list.map((e, i) => {
+    const cls = e.live ? ' me' : '';
+    return `<div class="lb-row-mini${cls}">${i + 1}. ${escapeHtml(e.name)} — ${e.stars}⭐</div>`;
+  }).join('');
+}
+
+// ---- start screen wiring ----
+const startScreen = document.getElementById('start-screen');
+const nameInput = document.getElementById('name-input');
+const startBtn = document.getElementById('start-btn');
+const charSelectEl = document.getElementById('char-select');
+const playerSvgSlot = document.getElementById('player-svg-slot');
+const playerNameEl = document.getElementById('player-name');
+const muteBtn = document.getElementById('mute-btn');
+const leaderboardBtn = document.getElementById('leaderboard-btn');
+const leaderboardScreen = document.getElementById('leaderboard-screen');
+const leaderboardCloseBtn = document.getElementById('leaderboard-close-btn');
+
+let selectedKey = 'javed';
+let playerName = rosterEntry(selectedKey).name;
+
+// build character cards from the roster
+charSelectEl.innerHTML = ROSTER.map((r, i) =>
+  `<div class="char-option${i === 0 ? ' selected' : ''}" data-key="${r.key}">
+     <div class="char-preview" id="preview-${r.key}"></div>
+     <span>${r.label || r.name}</span>
+   </div>`
+).join('');
+ROSTER.forEach((r, i) => {
+  document.getElementById('preview-' + r.key).innerHTML = personSVG(r, '-p' + i);
+});
+
+const charOptions = document.querySelectorAll('.char-option');
+
+charOptions.forEach(opt => {
+  opt.addEventListener('click', () => {
+    charOptions.forEach(o => o.classList.remove('selected'));
+    opt.classList.add('selected');
+    selectedKey = opt.dataset.key;
+  });
+});
+
+startBtn.addEventListener('click', () => {
+  const typed = nameInput.value.trim();
+  playerName = typed || rosterEntry(selectedKey).name || 'Player';
+  playerNameEl.textContent = playerName;
+  playerSvgSlot.innerHTML = svgFor(selectedKey, '-pl');
+  startScreen.classList.add('hidden');
+  ensureAudio();
+  startMusic();
+  restartGame();
+  renderLiveLeaderboard();
+});
+
+muteBtn.addEventListener('click', toggleMusic);
+
+leaderboardBtn.addEventListener('click', () => {
+  document.getElementById('leaderboard-list').innerHTML = renderLeaderboardRows(loadLeaderboard());
+  leaderboardScreen.classList.remove('hidden');
+});
+leaderboardCloseBtn.addEventListener('click', () => {
+  leaderboardScreen.classList.add('hidden');
+});
+</script>
+</body>
+</html>
