@@ -1601,48 +1601,86 @@ let musicTimer = null;
 let musicStep = 0;
 function startMusic() {
   if (musicTimer) return;
-  const stepDur = 0.15;
-  const bassPattern = [98, 98, 130.81, 98, 116.54, 98, 130.81, 146.83];
-  const leadPattern = [392, 0, 440, 0, 494, 0, 440, 392];
+  const stepDur = 0.108; // ~139 BPM in 16th notes — brisk, arcade-action pace
+  // driving octave-bounce bass in A minor (root/fifth/octave), classic retro-action feel
+  const bassPattern = [110, 0, 110, 0, 165, 0, 110, 0, 130.81, 0, 130.81, 0, 196, 0, 130.81, 0];
+  // heroic rising/falling arpeggio lead, fantasy-adventure style
+  const leadPattern = [440, 0, 523.25, 0, 659.25, 0, 880, 659.25, 523.25, 0, 440, 0, 349.23, 0, 392, 440];
+
+  function playKick(t) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, t);
+    osc.frequency.exponentialRampToValueAtTime(45, t + 0.09);
+    gain.gain.setValueAtTime(0.35, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(t); osc.stop(t + 0.13);
+  }
+  function playSnare(t) {
+    const bufferSize = Math.floor(audioCtx.sampleRate * 0.08);
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = buffer;
+    const bp = audioCtx.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 0.8;
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.22, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+    noise.connect(bp).connect(gain).connect(audioCtx.destination);
+    noise.start(t); noise.stop(t + 0.09);
+  }
+  function playHat(t) {
+    const bufferSize = Math.floor(audioCtx.sampleRate * 0.025);
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.3;
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = buffer;
+    const hp = audioCtx.createBiquadFilter();
+    hp.type = 'highpass'; hp.frequency.value = 7500;
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.05, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.025);
+    noise.connect(hp).connect(gain).connect(audioCtx.destination);
+    noise.start(t); noise.stop(t + 0.025);
+  }
+
   function scheduleStep() {
     if (musicEnabled && audioCtx) {
       const t = audioCtx.currentTime + 0.02;
-      const bOsc = audioCtx.createOscillator();
-      const bGain = audioCtx.createGain();
-      bOsc.type = 'square';
-      bOsc.frequency.setValueAtTime(bassPattern[musicStep % bassPattern.length], t);
-      bGain.gain.setValueAtTime(0.09, t);
-      bGain.gain.exponentialRampToValueAtTime(0.001, t + stepDur * 0.85);
-      bOsc.connect(bGain).connect(audioCtx.destination);
-      bOsc.start(t); bOsc.stop(t + stepDur);
+      const step = musicStep % 16;
 
-      const leadFreq = leadPattern[musicStep % leadPattern.length];
+      const bassFreq = bassPattern[step];
+      if (bassFreq > 0) {
+        const bOsc = audioCtx.createOscillator();
+        const bGain = audioCtx.createGain();
+        bOsc.type = 'square';
+        bOsc.frequency.setValueAtTime(bassFreq, t);
+        bGain.gain.setValueAtTime(0.11, t);
+        bGain.gain.exponentialRampToValueAtTime(0.001, t + stepDur * 0.9);
+        bOsc.connect(bGain).connect(audioCtx.destination);
+        bOsc.start(t); bOsc.stop(t + stepDur);
+      }
+
+      const leadFreq = leadPattern[step];
       if (leadFreq > 0) {
         const lOsc = audioCtx.createOscillator();
         const lGain = audioCtx.createGain();
         lOsc.type = 'triangle';
         lOsc.frequency.setValueAtTime(leadFreq, t);
-        lGain.gain.setValueAtTime(0.05, t);
-        lGain.gain.exponentialRampToValueAtTime(0.001, t + stepDur * 0.8);
+        lGain.gain.setValueAtTime(0.07, t);
+        lGain.gain.exponentialRampToValueAtTime(0.001, t + stepDur * 0.85);
         lOsc.connect(lGain).connect(audioCtx.destination);
         lOsc.start(t); lOsc.stop(t + stepDur);
       }
 
-      if (musicStep % 2 === 1) {
-        const bufferSize = Math.floor(audioCtx.sampleRate * 0.03);
-        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.3;
-        const noise = audioCtx.createBufferSource();
-        noise.buffer = buffer;
-        const hp = audioCtx.createBiquadFilter();
-        hp.type = 'highpass'; hp.frequency.value = 6000;
-        const hGain = audioCtx.createGain();
-        hGain.gain.setValueAtTime(0.06, t);
-        hGain.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
-        noise.connect(hp).connect(hGain).connect(audioCtx.destination);
-        noise.start(t); noise.stop(t + 0.03);
-      }
+      if (step === 0 || step === 8) playKick(t);
+      if (step === 4 || step === 12) playSnare(t);
+      if (step % 2 === 1) playHat(t);
     }
     musicStep++;
   }
