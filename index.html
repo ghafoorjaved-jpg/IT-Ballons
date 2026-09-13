@@ -2,6 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a1a2c">
 <title>Play & Learn Deutsch — German IT Vocabulary Shooter</title>
 <style>
   :root {
@@ -739,7 +744,7 @@
     position: absolute;
     top: 78px; left: 50%;
     transform: translateX(-50%);
-    z-index: 40;
+    z-index: 70;
     padding: 6px 16px;
     border-radius: 20px;
     font-weight: 800;
@@ -777,6 +782,7 @@
       <button id="start-btn">Start Game</button>
       <button id="leaderboard-btn" class="secondary-btn">🏆 Leaderboard</button>
       <button id="tutorial-btn" class="secondary-btn">❓ How to Play</button>
+      <button id="fullscreen-btn-start" class="secondary-btn">⛶ Full Screen</button>
     </div>
   </div>
 
@@ -929,6 +935,7 @@
       <div class="pill" style="color:var(--streak)">🔥 <span id="stat-streak">0</span></div>
     </div>
     <div class="pill" id="mute-btn" style="cursor:pointer;">🔊</div>
+    <div class="pill" id="fullscreen-btn" style="cursor:pointer;">⛶</div>
   </div>
   <div id="stage-counter"><span id="level-badge">A1</span> · STAGE <span id="stat-stage">1</span>/<span id="stat-total">500</span></div>
 
@@ -2067,6 +2074,53 @@ tutorialBtn.addEventListener('click', () => {
 });
 tutorialCloseBtn.addEventListener('click', () => {
   tutorialScreen.classList.add('hidden');
+});
+
+// ---- fullscreen toggle (works on Android/desktop; iOS Safari doesn't support this
+// API for regular pages, so we detect that and point people to Add to Home Screen instead) ----
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+function fsElement() {
+  return document.documentElement;
+}
+function isFullscreenSupported() {
+  const el = fsElement();
+  return !!(el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen);
+}
+function isCurrentlyFullscreen() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+}
+function enterFullscreen() {
+  const el = fsElement();
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+  if (req) req.call(el);
+}
+function exitFullscreen() {
+  const ex = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+  if (ex) ex.call(document);
+}
+function updateFullscreenIcons() {
+  const icon = isCurrentlyFullscreen() ? '⤢' : '⛶';
+  const btn1 = document.getElementById('fullscreen-btn');
+  const btn2 = document.getElementById('fullscreen-btn-start');
+  if (btn1) btn1.textContent = icon;
+}
+function toggleFullscreen() {
+  if (isIOS() || !isFullscreenSupported()) {
+    showToast('On iPhone: tap Share → Add to Home Screen for full screen', 'bad');
+    return;
+  }
+  if (isCurrentlyFullscreen()) {
+    exitFullscreen();
+  } else {
+    enterFullscreen();
+  }
+}
+document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
+document.getElementById('fullscreen-btn-start').addEventListener('click', toggleFullscreen);
+['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(ev => {
+  document.addEventListener(ev, updateFullscreenIcons);
 });
 </script>
 </body>
