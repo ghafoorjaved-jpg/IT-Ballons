@@ -41,7 +41,7 @@
     overflow: hidden;
   }
   /* real photo background replaces the illustrated scenery */
-  .cloud, .skyline, .tree, #monument-wrap, #ground {
+  .cloud, .skyline, .tree, #monument-wrap {
     display: none;
   }
   /* clouds */
@@ -77,15 +77,25 @@
   #ground {
     position: absolute;
     left: 0; right: 0; bottom: 0;
-    height: 15%;
-    background: linear-gradient(#1a2b3d, #0d1826);
+    height: 13%;
+    background: linear-gradient(#8a8578, #5c5850);
+    box-shadow: 0 -4px 10px rgba(0,0,0,0.35);
   }
   #ground::before {
     content: '';
     position: absolute;
-    top: 10%; left: 0; right: 0; height: 4px;
-    background: repeating-linear-gradient(90deg, #f4c430 0 24px, transparent 24px 44px);
-    opacity: 0.6;
+    top: 0; left: 0; right: 0; height: 5px;
+    background: linear-gradient(#c9c3b0, #a8a290);
+  }
+  #ground::after {
+    content: '';
+    position: absolute;
+    top: 22%; left: 0; right: 0; bottom: 0;
+    background-image:
+      radial-gradient(rgba(0,0,0,0.15) 1.5px, transparent 1.6px),
+      radial-gradient(rgba(255,255,255,0.12) 1.5px, transparent 1.6px);
+    background-size: 26px 18px, 34px 22px;
+    background-position: 0 0, 12px 8px;
   }
   /* HUD */
   #hud-top {
@@ -93,84 +103,103 @@
     top: 0; left: 0; right: 0;
     z-index: 30;
     display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 8px 8px 0;
+  }
+  #hud-row1 {
+    display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 10px 0;
+    gap: 5px;
   }
   #locale {
     background: var(--panel);
     border: 2px solid var(--panel-border);
-    border-radius: 10px;
-    padding: 6px 10px;
+    border-radius: 9px;
+    padding: 4px 7px;
     color: white;
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 0.72rem;
+    gap: 5px;
+    font-size: 0.6rem;
     flex-shrink: 0;
+    max-width: 30%;
   }
   #flag {
-    width: 26px; height: 18px;
+    width: 18px; height: 13px;
     background: linear-gradient(#111 0 33%, #dd0000 33% 66%, #ffcc00 66%);
     border-radius: 2px;
     flex-shrink: 0;
   }
-  #locale b { font-size: 0.85rem; display: block; }
-  #prompt-box {
-    flex: 1;
+  #locale b { font-size: 0.66rem; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #locale-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #hud-stats {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+  .pill {
     background: var(--panel);
     border: 2px solid var(--panel-border);
-    border-radius: 10px;
-    padding: 6px 10px;
+    border-radius: 16px;
+    padding: 3px 6px;
+    color: white;
+    font-weight: 700;
+    font-size: 0.62rem;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .icon-btn {
+    background: var(--panel);
+    border: 2px solid var(--panel-border);
+    border-radius: 50%;
+    width: 24px; height: 24px;
+    color: white;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  #prompt-box {
+    background: var(--panel);
+    border: 2px solid var(--panel-border);
+    border-radius: 9px;
+    padding: 4px 8px;
     text-align: center;
     color: #dfefff;
     min-width: 0;
   }
-  #prompt-box .label { font-size: 0.7rem; opacity: 0.85; }
+  #prompt-box .label { font-size: 0.6rem; opacity: 0.85; }
   #prompt-box .word {
-    font-size: 1.15rem;
+    font-size: 0.92rem;
     font-weight: 800;
     color: var(--gold);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  #stats {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    flex-shrink: 0;
-  }
-  .pill {
-    background: var(--panel);
-    border: 2px solid var(--panel-border);
-    border-radius: 20px;
-    padding: 3px 9px;
-    color: white;
-    font-weight: 700;
-    font-size: 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    white-space: nowrap;
-  }
   #stage-counter {
-    position: absolute;
-    top: 66px; right: 10px;
-    z-index: 30;
     background: var(--panel);
     border: 2px solid var(--panel-border);
     border-radius: 8px;
-    padding: 3px 10px;
+    padding: 2px 8px;
     color: white;
-    font-size: 0.7rem;
+    font-size: 0.6rem;
     font-weight: 700;
+    align-self: center;
   }
   /* balloons */
   .balloon {
     position: absolute;
-    width: 164px;
-    height: 200px;
+    width: min(98px, 24vw);
+    height: min(120px, 29vw);
     border-radius: 50% 50% 48% 48% / 58% 58% 42% 42%;
     display: flex;
     align-items: center;
@@ -193,13 +222,13 @@
     background: rgba(255,255,255,0.95);
     color: var(--ink);
     font-weight: 800;
-    font-size: 1.05rem;
-    padding: 7px 14px;
-    border-radius: 24px;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.2);
-    max-width: 88%;
+    font-size: 0.66rem;
+    padding: 4px 8px;
+    border-radius: 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    max-width: 90%;
     text-align: center;
-    line-height: 1.15;
+    line-height: 1.1;
     pointer-events: none;
   }
   .balloon::after {
@@ -223,7 +252,7 @@
   /* dragon boss */
   #dragon-wrap {
     position: absolute;
-    width: min(460px, 86vw);
+    width: min(210px, 52vw);
     aspect-ratio: 460 / 360;
     z-index: 9;
     display: none;
@@ -277,8 +306,8 @@
   /* player (SVG figure) */
   #player-wrap {
     position: absolute;
-    bottom: 15%;
-    width: min(252px, 62vw);
+    bottom: 13%;
+    width: min(78px, 19vw);
     aspect-ratio: 84 / 118;
     transform: translateX(-50%);
     z-index: 10;
@@ -291,14 +320,14 @@
   #player-wrap.firing .launcher-arm { transform-origin: 50% 100%; animation: recoil 0.18s ease; }
   #player-name {
     position: absolute;
-    top: -26px; left: 50%;
+    top: -18px; left: 50%;
     transform: translateX(-50%);
     background: rgba(255,255,255,0.92);
     color: #a5225a;
-    font-size: 0.8rem;
+    font-size: 0.56rem;
     font-weight: 800;
-    padding: 3px 11px;
-    border-radius: 12px;
+    padding: 2px 7px;
+    border-radius: 9px;
     white-space: nowrap;
     box-shadow: 0 2px 4px rgba(0,0,0,0.25);
     letter-spacing: 0.02em;
@@ -569,16 +598,16 @@
   #overlay-rank { color: var(--gold); font-weight: 700; font-size: 0.85rem; margin: -6px 0 12px; }
   #live-leaderboard {
     position: absolute;
-    top: 66px; left: 10px;
+    top: 118px; left: 8px;
     z-index: 30;
     background: var(--panel);
     border: 2px solid var(--panel-border);
     border-radius: 8px;
-    padding: 5px 8px 6px;
-    max-width: 148px;
+    padding: 4px 7px 5px;
+    max-width: 130px;
   }
   #live-leaderboard .lb-title {
-    font-size: 0.62rem;
+    font-size: 0.58rem;
     font-weight: 800;
     color: var(--gold);
     margin-bottom: 2px;
@@ -924,20 +953,22 @@
   <div id="ground"></div>
 
   <div id="hud-top">
-    <div id="locale"><div id="flag"></div><div><b>Schwangau</b>Schloss Neuschwanstein</div></div>
+    <div id="hud-row1">
+      <div id="locale"><div id="flag"></div><div><b>Schwangau</b><span id="locale-sub">Neuschwanstein</span></div></div>
+      <div id="hud-stats">
+        <div class="pill" style="color:var(--gold)">⭐<span id="stat-stars">0</span></div>
+        <div class="pill" style="color:var(--heart)">❤<span id="stat-hearts">3</span></div>
+        <div class="pill" style="color:var(--streak)">🔥<span id="stat-streak">0</span></div>
+        <div class="icon-btn" id="mute-btn">🔊</div>
+        <div class="icon-btn" id="fullscreen-btn">⛶</div>
+      </div>
+    </div>
     <div id="prompt-box">
       <div class="label">Shoot the German word for:</div>
       <div class="word" id="prompt-word">—</div>
     </div>
-    <div id="stats">
-      <div class="pill" style="color:var(--gold)">⭐ <span id="stat-stars">0</span></div>
-      <div class="pill" style="color:var(--heart)">❤ <span id="stat-hearts">3</span></div>
-      <div class="pill" style="color:var(--streak)">🔥 <span id="stat-streak">0</span></div>
-    </div>
-    <div class="pill" id="mute-btn" style="cursor:pointer;">🔊</div>
-    <div class="pill" id="fullscreen-btn" style="cursor:pointer;">⛶</div>
+    <div id="stage-counter"><span id="level-badge">A1</span> · Stage <span id="stat-stage">1</span>/<span id="stat-total">500</span></div>
   </div>
-  <div id="stage-counter"><span id="level-badge">A1</span> · STAGE <span id="stat-stage">1</span>/<span id="stat-total">500</span></div>
 
   <div id="live-leaderboard">
     <div class="lb-title">🏆 Top 3</div>
@@ -1396,7 +1427,7 @@ function nextRound() {
 
   promptWord.textContent = targetEntry.en;
 
-  const positions = [26, 42, 58, 74]; // percent left, clustered toward the center
+  const positions = [12, 37, 62, 87]; // percent left, spread across width (balloons are small now, less overlap risk)
   const shuffledPositions = shuffle(positions).slice(0, options.length);
   const topBands = [8, 26, 14, 32]; // stagger vertical bands so overlapping balloons still read clearly
 
