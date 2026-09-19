@@ -108,7 +108,7 @@
     display: flex;
     flex-direction: column;
     gap: 5px;
-    padding: 8px 8px 0;
+    padding: max(40px, env(safe-area-inset-top, 0px) + 30px) 8px 0;
   }
   #hud-row1 {
     display: flex;
@@ -181,8 +181,10 @@
   }
   #prompt-box .label { font-size: 0.6rem; opacity: 0.85; }
   #prompt-box .word {
-    font-size: 0.92rem;
+    font-size: 1rem;
     font-weight: 800;
+    font-family: 'Verdana', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    letter-spacing: 0.01em;
     color: var(--gold);
     white-space: nowrap;
     overflow: hidden;
@@ -192,11 +194,13 @@
     background: var(--panel);
     border: 2px solid var(--panel-border);
     border-radius: 8px;
-    padding: 2px 8px;
+    padding: 3px 10px;
     color: white;
-    font-size: 0.6rem;
+    font-size: 0.68rem;
     font-weight: 700;
-    align-self: center;
+    font-family: 'Verdana', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    letter-spacing: 0.01em;
+    align-self: flex-end;
   }
   /* balloons */
   .balloon {
@@ -609,7 +613,7 @@
   #overlay-rank { color: var(--gold); font-weight: 700; font-size: 0.85rem; margin: -6px 0 12px; }
   #live-leaderboard {
     position: absolute;
-    top: 118px; left: 8px;
+    top: calc(max(40px, env(safe-area-inset-top, 0px) + 30px) + 82px); left: 8px;
     z-index: 30;
     background: var(--panel);
     border: 2px solid var(--panel-border);
@@ -1467,7 +1471,7 @@ function nextRound() {
 
   const positions = [24, 41, 59, 76]; // percent left, clustered toward center — keeps balloons well inside the screen
   const shuffledPositions = shuffle(positions).slice(0, options.length);
-  const topBands = [8, 26, 14, 32]; // stagger vertical bands so overlapping balloons still read clearly
+  const topBands = [22, 40, 28, 46]; // stagger vertical bands, shifted down to clear the taller HUD
 
   current = { target: targetEntry, balloons: [] };
 
@@ -1704,6 +1708,21 @@ function hitDragon() {
   }
 }
 
+function speakGerman(text) {
+  try {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = 'de-DE';
+    utter.rate = 0.92;
+    utter.pitch = 1.0;
+    const voices = window.speechSynthesis.getVoices();
+    const deVoice = voices.find(v => v.lang && v.lang.toLowerCase().startsWith('de'));
+    if (deVoice) utter.voice = deVoice;
+    window.speechSynthesis.speak(utter);
+  } catch (e) {}
+}
+
 function resolveHit(b) {
   const br = b.getBoundingClientRect();
   const stageRect = stage.getBoundingClientRect();
@@ -1714,6 +1733,7 @@ function resolveHit(b) {
 
   if (b.dataset.correct === '1') {
     playCorrectSound();
+    speakGerman(b.dataset.de);
     stars += 10;
     streak += 1;
     roundNumber = Math.min(roundNumber + 1, TOTAL_ROUNDS + 1);
@@ -1828,10 +1848,11 @@ function personSVG(opts, sfx) {
 
   const skinGradId = 'skinGrad' + sfx;
   const skinDefs = `
-    <radialGradient id="${skinGradId}" cx="38%" cy="32%" r="72%">
-      <stop offset="0%" stop-color="#ffdfb8"/>
-      <stop offset="70%" stop-color="${skin}"/>
-      <stop offset="100%" stop-color="${shade(skin, -14)}"/>
+    <radialGradient id="${skinGradId}" cx="34%" cy="28%" r="78%">
+      <stop offset="0%" stop-color="#ffe6c2"/>
+      <stop offset="55%" stop-color="${skin}"/>
+      <stop offset="88%" stop-color="${shade(skin, -22)}"/>
+      <stop offset="100%" stop-color="${shade(skin, -34)}"/>
     </radialGradient>`;
   const skinFill = `url(#${skinGradId})`;
 
@@ -1855,6 +1876,8 @@ function personSVG(opts, sfx) {
     <rect x="31" y="135" width="23" height="3" fill="#fff" opacity="0.85"/>
     <rect x="49" y="135" width="23" height="3" fill="#fff" opacity="0.85"/>
     <path d="M32 64 Q50 56 68 64 L70 102 Q50 108 30 102 Z" fill="${leg}" stroke="${outline}" stroke-width="1.2"/>
+    <rect x="34" y="90" width="9" height="10" rx="1.5" fill="${legDark}" stroke="${outline}" stroke-width="0.8"/>
+    <rect x="57" y="90" width="9" height="10" rx="1.5" fill="${legDark}" stroke="${outline}" stroke-width="0.8"/>
     <path d="M32 64 Q50 54 68 64 L67 88 Q50 94 31 88 Z" fill="${outfitFill}" stroke="${outline}" stroke-width="1.2"/>
     <path d="M32 64 Q50 54 68 64 L67 72 Q50 66 31 72 Z" fill="rgba(255,255,255,0.15)"/>
     <path d="M33 82 Q50 88 67 82 L67 88 Q50 94 33 88 Z" fill="${outfitDark}" opacity="0.4"/>
@@ -1881,16 +1904,24 @@ function personSVG(opts, sfx) {
     <defs>${skinDefs}${flagDefs}</defs>
     <ellipse cx="50" cy="146" rx="24" ry="5" fill="rgba(0,0,0,0.22)"/>
     ${lowerBody}
+    <!-- backpack peeking from behind the torso -->
+    <path d="M20 68 Q14 70 15 92 Q16 100 24 100 L26 70 Z" fill="#8a4a2a" stroke="${outline}" stroke-width="1.2"/>
+    <path d="M74 68 Q80 70 79 92 Q78 100 70 100 L68 70 Z" fill="#8a4a2a" stroke="${outline}" stroke-width="1.2"/>
+    <path d="M40 62 L36 90 M60 62 L64 90" stroke="#6b3418" stroke-width="3" stroke-linecap="round"/>
     <rect x="21" y="66" width="10" height="30" rx="5" fill="${outfitFill}" stroke="${outline}" stroke-width="1"/>
     <circle cx="26" cy="98" r="5.5" fill="${skinFill}" stroke="${outline}" stroke-width="1"/>
+    <path d="M22.5 100 l-1.5 4 M25 101.5 l-0.5 4.5 M27.5 101.5 l0.5 4.5 M30 100 l1.5 4" stroke="${shade(skin, -30)}" stroke-width="1" stroke-linecap="round"/>
     <g class="launcher-arm">
       <rect x="66" y="10" width="9" height="82" rx="4" fill="${gunDark}" transform="rotate(18 70 62)"/>
       <rect x="60" y="4" width="19" height="11" rx="2.5" fill="${gunLight}" transform="rotate(18 70 62)"/>
       <rect x="67" y="58" width="9" height="36" rx="4.5" fill="${outfitFill}" stroke="${outline}" stroke-width="1"/>
       <circle cx="72" cy="96" r="5.5" fill="${skinFill}" stroke="${outline}" stroke-width="1"/>
+      <path d="M68.5 98 l-1.5 4 M71 99.5 l-0.5 4.5 M73.5 99.5 l0.5 4.5 M76 98 l1.5 4" stroke="${shade(skin, -30)}" stroke-width="1" stroke-linecap="round"/>
     </g>
     <rect x="44" y="43" width="12" height="10" fill="${skinFill}"/>
     <circle cx="50" cy="32" r="22" fill="${skinFill}" stroke="${outline}" stroke-width="1.2"/>
+    <!-- side face-shading crescent for volume -->
+    <path d="M63 20 Q72 32 65 46 Q71 34 68 22 Z" fill="${shade(skin, -20)}" opacity="0.35"/>
     <ellipse cx="28" cy="33" rx="2.8" ry="3.8" fill="${skinFill}"/>
     <ellipse cx="72" cy="33" rx="2.8" ry="3.8" fill="${skinFill}"/>
     ${hair}
@@ -2172,6 +2203,7 @@ startBtn.addEventListener('click', () => {
   }
 
   ensureAudio();
+  if ('speechSynthesis' in window) { window.speechSynthesis.getVoices(); }
   startMusic();
   restartGame();
   renderLiveLeaderboard();
